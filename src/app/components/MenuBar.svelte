@@ -7,6 +7,8 @@
   let { app, cmd }: { app: AppState; cmd: Record<string, Command> } = $props();
   let open = $state<number | null>(null);
   let bar = $state<HTMLElement>();
+  /** The open dropdown. It is rendered outside the menubar: a menubar may only own menu items. */
+  let drop = $state<HTMLElement>();
 
   /** Toggle-style commands show a check mark. */
   const checked = (id: string): boolean | undefined => {
@@ -28,7 +30,7 @@
     .filter((c) => c === null || c.available?.() !== false) as (Command | null)[];
 
   function focusItem(idx: number) {
-    const list = [...(bar?.querySelectorAll<HTMLButtonElement>('.dropdown [role=menuitem]:not(:disabled), .dropdown [role=menuitemcheckbox]:not(:disabled)') ?? [])];
+    const list = [...(drop?.querySelectorAll<HTMLButtonElement>('[role=menuitem]:not(:disabled), [role=menuitemcheckbox]:not(:disabled)') ?? [])];
     list[(idx + list.length) % list.length]?.focus();
   }
   function openMenu(i: number, focusFirst = false) {
@@ -48,7 +50,7 @@
   }
   function onMenuKey(e: KeyboardEvent) {
     if (open === null) return;
-    const list = [...(bar?.querySelectorAll<HTMLButtonElement>('.dropdown button:not(:disabled)') ?? [])];
+    const list = [...(drop?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? [])];
     const i = list.indexOf(document.activeElement as HTMLButtonElement);
     if (e.key === 'ArrowDown') { e.preventDefault(); focusItem(i + 1); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); focusItem(i - 1); }
@@ -59,19 +61,28 @@
   }
 </script>
 
-<svelte:window onpointerdown={(e) => { if (open !== null && bar && !bar.contains(e.target as Node)) close(false); }} />
+<svelte:window onpointerdown={(e) => {
+  const t = e.target as Node;
+  if (open !== null && !bar?.contains(t) && !drop?.contains(t)) close(false);
+}} />
 
 <div class="menubar" role="menubar" tabindex="-1" aria-label="Main menu" bind:this={bar} onkeydown={onMenuKey}>
   {#each MENUS as m, i (m.label)}
-    <div class="menu">
       <button type="button" class="top" class:on={open === i} role="menuitem" aria-haspopup="menu" aria-expanded={open === i}
+        aria-controls={open === i ? `curve-menu-${i}` : undefined}
         onclick={() => (open === i ? close(false) : openMenu(i))}
         onpointerenter={() => { if (open !== null && open !== i) openMenu(i); }}
         onkeydown={(e) => { if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMenu(i, true); } }}>
         {m.label}
       </button>
+  {/each}
+</div>
+
+{#each MENUS as m, i (m.label)}
       {#if open === i}
-        <div class="dropdown" role="menu" aria-label={m.label} style:left="{pos.x}px" style:top="{pos.y}px">
+        <!-- svelte-ignore a11y_interactive_supports_focus -->
+        <div class="dropdown" id="curve-menu-{i}" role="menu" aria-label={m.label} bind:this={drop}
+          style:left="{pos.x}px" style:top="{pos.y}px" onkeydown={onMenuKey}>
           {#each items(i) as c, j (c?.id ?? `sep-${j}`)}
             {#if c === null}
               <div class="sep" role="separator"></div>
@@ -87,13 +98,10 @@
           {/each}
         </div>
       {/if}
-    </div>
-  {/each}
-</div>
+{/each}
 
 <style>
   .menubar { display: flex; align-items: center; gap: 0; flex: none; }
-  .menu { position: relative; }
   .top { padding: 4px 9px; font-size: 13px; color: var(--c-text-2); }
   .top.on { background: var(--c-panel-2); color: var(--c-text); }
   .dropdown {

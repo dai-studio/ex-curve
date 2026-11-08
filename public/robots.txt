@@ -1,0 +1,5 @@
+# Curve — https://curve.by.dai.studio
+User-agent: *
+Allow: /
+
+Sitemap: https://curve.by.dai.studio/sitemap.xml

@@ -1,0 +1,24 @@
+# Curve
+
+> Curve is a free, browser-based SVG editor. Every shape stays the SVG element you drew (rect, circle, ellipse, line, polyline, polygon, path, text, image, use) and is edited through its own on-canvas points, so saved files remain clean, readable SVG. Files stay on your computer: nothing is uploaded. Built with DAI Studio.
+
+Curve runs entirely in the browser as a static web app and can be installed as a PWA that opens `.svg` files. It is also embeddable: DAI Studio uses it as its SVG editor.
+
+## Use Curve
+
+- [Open the editor](https://curve.by.dai.studio/): draw, edit and export SVG in the browser
+
+## Features
+
+- Shape editing: native editor points for every SVG shape; paths keep their original commands (relative/absolute, shorthand) when edited
+- Drawing tools: rectangle, ellipse/circle, line, polygon, star, pen, pencil, text
+- Style and geometry inspector: fill, stroke, opacity, fonts, position, size, rotation, and an attribute editor with number, colour and keyword fields
+- Layers and arrange: reorder, group/ungroup, align, distribute, flip, lock, hide
+- Symbols and definitions: edit `<symbol>`s through their `<use>` instances; inspect gradients, filters, markers and other `<defs>`
+- Clipboard and import safety: copy/paste SVG between documents and apps; scripts and event handlers are stripped on import
+- Files and export: open/save local files, autosave in the browser, PNG export, minified SVG
+
+## About
+
+- [DAI Studio](https://dai.studio): the AI design and planning tool Curve was specified and built with
+- [Source code](https://github.com/dai-studio/curve): the Curve repository on GitHub

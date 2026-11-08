@@ -68,6 +68,7 @@
 <section class="defs" class:open aria-label="Definitions">
   <SectionHeader title="Definitions" {open} ontoggle={() => (open = !open)} count={rows.filter((r) => r.depth === 0).length} />
   {#if open}
+    {#if rows.length}
     <ul class="list" role="tree" aria-label="Document definitions">
       {#each rows as row (row.el)}
         <li role="treeitem" aria-selected={selected.has(row.el) || editing === row.el} tabindex="-1" aria-level={row.depth + 1}
@@ -88,10 +89,11 @@
             <span class="users" class:unused={!row.users}>{row.users}</span>
           {/if}
         </li>
-      {:else}
-        <li class="empty muted">No definitions. Symbols, gradients, filters and other reusable parts appear here.</li>
       {/each}
     </ul>
+    {:else}
+      <p class="empty muted">No definitions. Symbols, gradients, filters and other reusable parts appear here.</p>
+    {/if}
   {/if}
 </section>
 
@@ -113,5 +115,5 @@
     background: var(--c-panel-2); color: var(--c-text-2);
   }
   .users.unused { color: var(--c-faint); }
-  .empty { padding: 8px 12px; font-size: 12px; }
+  .empty { margin: 0; padding: 8px 12px; font-size: 12px; }
 </style>

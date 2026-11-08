@@ -50,19 +50,19 @@
 <dialog bind:this={dialog} class="palette" aria-label="Command palette"
   onclose={() => (app.showPalette = false)} onclick={(e) => { if (e.target === dialog) app.showPalette = false; }}>
   <input bind:this={input} bind:value={q} type="text" placeholder="Type a command…" aria-label="Command"
-    role="combobox" aria-expanded="true" aria-controls="curve-palette-list" aria-activedescendant="curve-cmd-{active}"
+    role="combobox" aria-expanded="true" aria-controls="curve-palette-list" aria-activedescendant={results.length ? `curve-cmd-${active}` : undefined}
     onkeydown={onKey} spellcheck="false" autocomplete="off" />
-  <ul id="curve-palette-list" role="listbox">
+  <ul id="curve-palette-list" role="listbox" aria-label="Commands">
     {#each results as r, i (r.c.id)}
       <li id="curve-cmd-{i}" data-i={i} role="option" aria-selected={i === active} aria-disabled={!r.on}
         class:active={i === active} class:off={!r.on}
         onpointermove={() => (active = i)} onclick={() => r.on && run(r.c)} onkeydown={() => {}}>
         <span>{r.c.label}</span>{#if r.c.keys}<kbd>{r.c.keys}</kbd>{/if}
       </li>
-    {:else}
-      <li class="none muted">No matching commands</li>
     {/each}
   </ul>
+  <!-- Outside the listbox: a listbox may only contain options. -->
+  {#if !results.length}<p class="none muted" role="status">No matching commands</p>{/if}
 </dialog>
 
 <style>
@@ -77,5 +77,5 @@
   li { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; border-radius: 6px; cursor: pointer; }
   li.active { background: var(--c-accent-soft); }
   li.off { opacity: 0.45; cursor: default; }
-  li.none { cursor: default; }
+  .none { margin: 0; padding: 4px 16px 14px; font-size: 13px; }
 </style>

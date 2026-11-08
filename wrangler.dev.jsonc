@@ -15,6 +15,8 @@
 
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
+    // Curve is one page (no client-side routes): unknown paths get public/404.html with a real
+    // 404 status, so crawlers and browsers see missing files (robots.txt, favicon.ico…) as missing.
+    "not_found_handling": "404-page"
   }
 }

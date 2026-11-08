@@ -113,6 +113,7 @@
   </SectionHeader>
   {#if open}
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    {#if rows.length}
     <ul class="tree" bind:this={tree} role="tree" aria-label="Document layers" ondragleave={(e) => { if (e.currentTarget === e.target) drop = null; }}>
       {#each rows as row, i (row.el)}
         {@const hidden = ed.isHidden(row.el)}
@@ -161,10 +162,11 @@
               onclick={(e) => { e.stopPropagation(); ed.setLocked([row.el], !locked); }}><Icon name={locked ? 'lock' : 'unlock'} size={13} /></button>
           </span>
         </li>
-      {:else}
-        <li class="empty muted">No shapes yet. Draw one with the tools on the left.</li>
       {/each}
     </ul>
+    {:else}
+      <p class="empty muted">No shapes yet. Draw one with the tools on the left.</p>
+    {/if}
     {#if renameError}<p class="err" role="alert">{renameError}</p>{/if}
   {/if}
 </section>
@@ -196,6 +198,6 @@
   .row:hover .tog, .tog:has(.on) { opacity: 1; }
   .tog button { padding: 3px; color: var(--c-muted); }
   .tog button.on { background: transparent; color: var(--c-text-2); }
-  .empty { padding: 8px 12px; font-size: 12px; }
+  .empty { margin: 0; padding: 8px 12px; font-size: 12px; }
   .err { color: var(--c-danger); font-size: 12px; margin: 4px 12px; }
 </style>
