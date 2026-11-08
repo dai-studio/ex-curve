@@ -3,8 +3,10 @@
    * ZoomNavigator: always-open card in the canvas's bottom-left corner, ported from DAI Studio
    * (editor-src/src/lib/editor/ZoomNavigator.svelte).
    *
-   *   - a minimap of the page and the document (rendered as an image, re-rendered debounced on
-   *     changes) with a box for the current view: drag the box to pan, click elsewhere to jump;
+   *   - a minimap of the page and the document with a box for the current view: drag the box to
+   *     pan, click elsewhere to jump. The document is drawn into a <canvas> (re-rendered debounced
+   *     on changes): a thumbnail must not be the page's Largest Contentful Paint, and canvases
+   *     aren't LCP candidates while SVG <image>s are. The SVG on top only holds the view box;
    *   - a full-width log-scale zoom slider below it (the zoom % is in its tooltip / aria-valuetext).
    *
    * The slider zooms with the selection centred (or around the view centre when nothing is
@@ -13,7 +15,7 @@
   import { onDestroy, untrack } from 'svelte';
   import type { AppState } from '../state.svelte';
   import type { Rect } from '../../engine/model';
-  import { NAV_MAP_H, NAV_MAP_W, mapBounds, mapDeltaToCanvas, mapToCanvas, sliderToZoom, zoomToSlider } from '../zoomNav';
+  import { NAV_MAP_H, NAV_MAP_W, mapBounds, mapDeltaToCanvas, mapScale, mapToCanvas, sliderToZoom, zoomToSlider } from '../zoomNav';
 
   let { app }: { app: AppState } = $props();
   const ed = $derived(app.editor);
@@ -23,8 +25,10 @@
   let view = $state<Rect>({ x: 0, y: 0, width: 1, height: 1 });
   let page = $state<Rect>({ x: 0, y: 0, width: 1, height: 1 });
   let bounds = $state<Rect>({ x: 0, y: 0, width: 1, height: 1 });
-  let image = $state<string | null>(null);
+  /** The document, decoded once per change; painted into the canvas whenever the map moves. */
+  let picture = $state.raw<HTMLImageElement | null>(null);
   let mapSvg = $state<SVGSVGElement | null>(null);
+  let canvasEl = $state<HTMLCanvasElement | null>(null);
   /** Set while dragging the view box: map bounds stay frozen meanwhile. */
   let drag = $state<{ startX: number; startY: number; start: Rect; bounds: Rect } | null>(null);
 
@@ -38,14 +42,46 @@
     if (!drag) bounds = mapBounds(page, view);
   }
 
-  /** Render the document into the minimap (as an image: no ids or scripts leak into the app). */
+  /**
+   * Decode the document as an image (an <img> renders SVG without running scripts, and its ids
+   * can't clash with the canvas). Only the latest render is kept if several overlap.
+   */
   let timer: ReturnType<typeof setTimeout> | null = null;
-  function rerender() {
+  let generation = 0;
+  async function rerender() {
     timer = null;
-    if (image) URL.revokeObjectURL(image);
-    image = ed.doc ? URL.createObjectURL(new Blob([ed.serialize()], { type: 'image/svg+xml' })) : null;
     syncView();
+    const gen = ++generation;
+    if (!ed.doc) { picture = null; return; }
+    const url = URL.createObjectURL(new Blob([ed.serialize()], { type: 'image/svg+xml' }));
+    const img = new Image();
+    img.src = url;
+    try { await img.decode(); } catch { /* unrenderable document: keep the page outline only */ }
+    URL.revokeObjectURL(url);
+    if (gen === generation) picture = img.complete && img.naturalWidth ? img : null;
   }
+
+  /** Paint page and document into the canvas, in the same "meet" mapping as the SVG view box. */
+  function paint() {
+    const c = canvasEl;
+    const ctx = c?.getContext('2d');
+    if (!c || !ctx) return;
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    if (c.width !== NAV_MAP_W * dpr) { c.width = NAV_MAP_W * dpr; c.height = NAV_MAP_H * dpr; }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, NAV_MAP_W, NAV_MAP_H);
+    const { scale, offsetX, offsetY } = mapScale(bounds, NAV_MAP_W, NAV_MAP_H);
+    const x = (page.x - bounds.x) * scale + offsetX, y = (page.y - bounds.y) * scale + offsetY;
+    const w = page.width * scale, h = page.height * scale;
+    const css = getComputedStyle(c);
+    ctx.fillStyle = css.getPropertyValue('--c-page').trim() || '#fff';
+    ctx.fillRect(x, y, w, h);
+    if (picture) ctx.drawImage(picture, x, y, w, h);
+    ctx.strokeStyle = css.getPropertyValue('--c-border-strong').trim() || '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, Math.round(w) - 1, Math.round(h) - 1);
+  }
+  $effect(() => { void bounds; void page; void picture; void canvasEl; void app.theme; paint(); });
   function scheduleRerender() {
     if (timer) clearTimeout(timer);
     timer = setTimeout(rerender, RERENDER_MS);
@@ -62,7 +98,7 @@
 
   onDestroy(() => {
     if (timer) clearTimeout(timer);
-    if (image) URL.revokeObjectURL(image);
+    generation++;
     onDragEnd();
   });
 
@@ -112,6 +148,8 @@
 
 {#if app.view.hasDoc}
   <div class="zoom-nav">
+    <div class="zoom-map-wrap" style:width="{NAV_MAP_W}px" style:height="{NAV_MAP_H}px">
+    <canvas bind:this={canvasEl} class="zoom-map-canvas" aria-hidden="true"></canvas>
     <svg
       bind:this={mapSvg}
       class="zoom-map"
@@ -123,8 +161,6 @@
       aria-label="Document overview"
       onpointerdown={onMapDown}
     >
-      <rect class="zoom-map-page" x={page.x} y={page.y} width={page.width} height={page.height} />
-      {#if image}<image href={image} x={page.x} y={page.y} width={page.width} height={page.height} preserveAspectRatio="none" />{/if}
       <rect
         class="zoom-map-view"
         role="presentation"
@@ -136,6 +172,7 @@
         onpointerdown={onBoxDown}
       />
     </svg>
+    </div>
 
     <div class="zoom-row">
       <input
@@ -170,15 +207,9 @@
     box-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
     user-select: none;
   }
-  .zoom-map {
-    display: block;
-    background: var(--c-panel-2);
-    border-bottom: 1px solid var(--c-border);
-    cursor: crosshair;
-    overflow: hidden;
-  }
-  .zoom-map-page { fill: var(--c-page); stroke: var(--c-border-strong); stroke-width: 1; vector-effect: non-scaling-stroke; }
-  .zoom-map image { pointer-events: none; }
+  .zoom-map-wrap { position: relative; flex: none; background: var(--c-panel-2); border-bottom: 1px solid var(--c-border); }
+  .zoom-map-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .zoom-map { position: relative; display: block; cursor: crosshair; overflow: hidden; }
   .zoom-map-view {
     fill: rgb(99 102 241 / 0.08);
     stroke: var(--c-accent);
