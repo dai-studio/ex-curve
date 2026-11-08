@@ -200,7 +200,7 @@
     flex: 1; min-width: 0; height: 100%; padding: 0 4px 0 0; border: 0 !important; outline: none !important;
     background: transparent !important; font: 12px var(--mono); color: var(--c-text);
   }
-  .hex input::placeholder { color: var(--c-faint); font-style: italic; }
+  .hex input::placeholder { color: var(--c-muted); font-style: italic; }
   .drop { flex: none; padding: 0 6px; color: var(--c-text-2); }
   .drop:disabled { opacity: 0.35; }
 

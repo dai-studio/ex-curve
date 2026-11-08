@@ -112,7 +112,7 @@
     background: var(--brand-gradient);
     -webkit-background-clip: text;
     background-clip: text;
-    color: transparent;
+    color: var(--c-accent-strong); -webkit-text-fill-color: transparent;
   }
   .badge:hover { border-color: var(--c-accent); }
 </style>

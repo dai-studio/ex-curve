@@ -179,7 +179,7 @@
     flex: 1; min-width: 0; height: 100% !important; padding: 0 6px !important; border: 0 !important; outline: none !important;
     background: transparent !important; font-size: 12.5px;
   }
-  .fp input::placeholder { color: var(--c-faint); font-family: var(--font); }
+  .fp input::placeholder { color: var(--c-muted); font-family: var(--font); }
   .toggle { flex: none; padding: 0 6px; border-radius: 0; border-left: 1px solid var(--c-border); color: var(--c-text-2); }
 
   .fp-pop {

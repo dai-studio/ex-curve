@@ -125,5 +125,5 @@
   .desc { font-size: 12px; }
   footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--c-border); font-size: 12px; }
   footer a { color: var(--c-text-2); text-decoration: none; }
-  footer strong { background: var(--brand-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  footer strong { background: var(--brand-gradient); -webkit-background-clip: text; background-clip: text; color: var(--c-accent-strong); -webkit-text-fill-color: transparent; }
 </style>

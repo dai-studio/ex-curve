@@ -10,7 +10,9 @@
   --c-border-strong: #cbd5e1;
   --c-text: #0f172a;
   --c-text-2: #475569;
-  --c-muted: #64748b;
+  /* Secondary text: >= 4.5:1 on every light background (panel, panel-2, bg, stage, accent-soft). */
+  --c-muted: #5c6b80;
+  /* Decoration only (dividers, disabled glyphs) — too light for text. */
   --c-faint: #94a3b8;
   --c-accent: #6366f1;
   --c-accent-strong: #4f46e5;
@@ -254,8 +256,8 @@
 .curve-panel .grid2 > label { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .curve-panel .grid2 > label > span { width: 14px; flex: none; color: var(--c-muted); font-size: 11px; text-align: center; }
 .curve-panel input[type='number'], .curve-panel input[type='text'], .curve-panel select { height: 26px; width: 100%; }
-.curve-panel .mixed::placeholder { color: var(--c-faint); font-style: italic; }
-.curve-panel .src { font-size: 10.5px; color: var(--c-faint); }
+.curve-panel .mixed::placeholder { color: var(--c-muted); font-style: italic; }
+.curve-panel .src { font-size: 10.5px; color: var(--c-muted); }
 
 /* Drag-to-scrub (app/scrub.ts): number fields and their labels show a horizontal-resize cursor. */
 .curve-app input[type='number']:not(:focus):not(:disabled),

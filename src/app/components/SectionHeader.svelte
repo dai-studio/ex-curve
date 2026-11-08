@@ -26,7 +26,7 @@
     width: 100%; flex: none; border-radius: 0; padding: 7px 12px; justify-content: flex-start; gap: 6px;
     font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-muted);
   }
-  .count { margin-left: auto; font-weight: 500; letter-spacing: 0; color: var(--c-faint); }
+  .count { margin-left: auto; font-weight: 500; letter-spacing: 0; color: var(--c-muted); }
   .chev { display: inline-flex; transition: transform 0.12s; }
   .chev.closed { transform: rotate(-90deg); }
 </style>

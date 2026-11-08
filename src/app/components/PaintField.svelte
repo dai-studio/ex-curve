@@ -30,7 +30,7 @@
 <style>
   .paint { display: flex; align-items: center; gap: 6px; margin: 6px 0; }
   .lbl { width: 46px; flex: none; color: var(--c-text-2); font-size: 12px; }
-  .inherited .lbl::after { content: '•'; color: var(--c-faint); margin-left: 3px; }
+  .inherited .lbl::after { content: '•'; color: var(--c-muted); margin-left: 3px; }
   .op { width: 46px !important; flex: none; text-align: right; padding-right: 4px !important; }
   /* Too narrow for a spinner: keep the number input (keyboard, semantics) without the arrows. */
   .op { appearance: textfield; -moz-appearance: textfield; }

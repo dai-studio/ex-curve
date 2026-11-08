@@ -109,11 +109,11 @@
   .twisty-sp { width: 14px; flex: none; }
   .ic { color: var(--c-muted); display: inline-flex; }
   .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-  .kind { font-size: 11px; color: var(--c-faint); }
+  .kind { font-size: 11px; color: var(--c-muted); }
   .users {
     min-width: 18px; text-align: center; font-size: 10.5px; border-radius: 8px; padding: 0 5px;
     background: var(--c-panel-2); color: var(--c-text-2);
   }
-  .users.unused { color: var(--c-faint); }
+  .users.unused { color: var(--c-muted); font-style: italic; }
   .empty { margin: 0; padding: 8px 12px; font-size: 12px; }
 </style>
