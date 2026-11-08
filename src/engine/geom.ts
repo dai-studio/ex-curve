@@ -1,3 +1,4 @@
+import { fmt } from './num';
 import type { Rect, Vec } from './model';
 
 export const v = (x: number, y: number): Vec => ({ x, y });
@@ -209,3 +210,22 @@ export function hasRotationOrSkew(s: string | null): boolean {
   const m = parseTransform(s);
   return Math.abs(m[1]) > 1e-9 || Math.abs(m[2]) > 1e-9;
 }
+
+// ---------------------------------------------------------------- transform attribute strings
+
+/** Prepend a transform function, merging with a leading function of the same kind. */
+export function prependTranslate(orig: string | null, d: Vec): string {
+  const m = /^\s*translate\(\s*([-+\d.eE]+)(?:[\s,]+([-+\d.eE]+))?\s*\)\s*(.*)$/.exec(orig ?? '');
+  if (m) return `translate(${fmt(+m[1] + d.x)} ${fmt(+(m[2] ?? 0) + d.y)})${m[3] ? ' ' + m[3] : ''}`;
+  return `translate(${fmt(d.x)} ${fmt(d.y)})${orig ? ' ' + orig : ''}`;
+}
+
+export function prependRotate(orig: string | null, a: number, p: Vec): string {
+  const m = /^\s*rotate\(\s*([-+\d.eE]+)[\s,]+([-+\d.eE]+)[\s,]+([-+\d.eE]+)\s*\)\s*(.*)$/.exec(orig ?? '');
+  if (m && Math.abs(+m[2] - p.x) < 1e-3 && Math.abs(+m[3] - p.y) < 1e-3) {
+    return `rotate(${fmt(+m[1] + a)} ${m[2]} ${m[3]})${m[4] ? ' ' + m[4] : ''}`;
+  }
+  return `rotate(${fmt(a)} ${fmt(p.x)} ${fmt(p.y)})${orig ? ' ' + orig : ''}`;
+}
+
+export const matrixString = (m: Mat) => `matrix(${m.map((x) => fmt(x, 6)).join(' ')})`;

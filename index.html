@@ -3,75 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Curve — a precise, open SVG editor. Built with DAI Studio." />
     <title>Curve</title>
-    <link rel="stylesheet" href="/src/style.css" />
+    <meta name="theme-color" content="#4d47bd" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <style>
+      @font-face { font-family: 'Noto Sans'; font-style: normal; font-weight: 400 700; font-stretch: 100%; font-display: swap; src: url('/fonts/noto-sans-latin.woff2') format('woff2'); }
+      html, body, #app { margin: 0; height: 100%; }
+      body { background: #f8fafc; }
+      @media (prefers-color-scheme: dark) { body { background: #0b1120; } }
+    </style>
   </head>
   <body>
-    <header class="toolbar">
-      <span class="brand">Curve</span>
-      <div class="group">
-        <button data-cmd="open" title="Open SVG (⌘O)">Open</button>
-        <button data-cmd="save" title="Save SVG (⌘S)">Save</button>
-        <button data-cmd="sample" title="Load the sample document">Sample</button>
-      </div>
-      <div class="group">
-        <button data-cmd="undo" title="Undo (⌘Z)">Undo</button>
-        <button data-cmd="redo" title="Redo (⇧⌘Z)">Redo</button>
-      </div>
-      <div class="group">
-        <button data-cmd="to-path" title="Replace the selection with an equivalent &lt;path&gt;">Convert to path</button>
-        <button data-cmd="to-ellipse" title="Replace a &lt;circle&gt; with an &lt;ellipse&gt;">Convert to ellipse</button>
-        <button data-cmd="delete" title="Delete points or elements (⌫)">Delete</button>
-      </div>
-      <div class="group">
-        <label><input type="checkbox" data-set="snap" checked /> Snap</label>
-        <label><input type="checkbox" data-set="showGrid" /> Grid</label>
-        <label><input type="checkbox" data-set="snapGrid" /> Snap to grid</label>
-      </div>
-      <div class="group right">
-        <button data-cmd="zoom-out" title="Zoom out">−</button>
-        <button data-cmd="fit" class="zoom" title="Zoom to fit">100%</button>
-        <button data-cmd="zoom-in" title="Zoom in">+</button>
-        <button data-cmd="source" title="Show the serialised SVG">Source</button>
-        <button data-cmd="help" title="Shortcuts">?</button>
-      </div>
-      <input type="file" id="file" accept=".svg,image/svg+xml" hidden />
-    </header>
-    <main>
-      <section id="stage" tabindex="0"></section>
-      <aside class="panel">
-        <div id="inspector"></div>
-        <details id="settings">
-          <summary>Settings</summary>
-          <label>Precision <input type="number" min="0" max="8" value="3" data-set="precision" /></label>
-          <label>Grid size <input type="number" min="1" value="10" data-set="grid" /></label>
-        </details>
-      </aside>
-      <section id="source" hidden>
-        <div class="source-head"><span>Document source</span><button data-cmd="copy">Copy</button></div>
-        <pre></pre>
-      </section>
-    </main>
-    <footer class="status"><span id="status-msg">Open an SVG or load the sample.</span><span id="status-pos"></span></footer>
-    <div id="menu" class="menu" hidden></div>
-    <dialog id="help">
-      <h2>Shortcuts</h2>
-      <table>
-        <tr><td>Click / Shift-click</td><td>Select shape / add to selection</td></tr>
-        <tr><td>Drag handle</td><td>Edit; ghost (hollow) handles insert a point or convert S→C, T→Q</td></tr>
-        <tr><td>Shift-click / marquee</td><td>Select several points; drag one to move all</td></tr>
-        <tr><td>Arrows (Shift)</td><td>Nudge 1 (10) screen px</td></tr>
-        <tr><td>⌫ / Delete</td><td>Delete selected points, else shapes</td></tr>
-        <tr><td>Double-click anchor</td><td>Cycle corner → smooth → symmetric</td></tr>
-        <tr><td>Double-click group</td><td>Enter group (Esc leaves)</td></tr>
-        <tr><td>Shift</td><td>Aspect ratio / 15° angle snap / keep rx:ry</td></tr>
-        <tr><td>Alt</td><td>Resize from centre / rx = ry / break smooth node</td></tr>
-        <tr><td>Ctrl (while dragging)</td><td>Bypass snapping</td></tr>
-        <tr><td>Space-drag / wheel</td><td>Pan; ⌘/Ctrl-wheel or pinch zooms</td></tr>
-        <tr><td>Right-click</td><td>Arc flags, node type, convert, delete</td></tr>
-      </table>
-      <form method="dialog"><button>Close</button></form>
-    </dialog>
+    <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

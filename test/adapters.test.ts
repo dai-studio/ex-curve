@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { NO_MODS, type AttrPatch, type Modifiers } from '../src/model';
-import { adapterFor } from '../src/adapters/registry';
-import { applyPatch, History, snapshot } from '../src/history';
-import { convertToEllipse, convertToPath } from '../src/commands';
-import { dist } from '../src/geom';
+import { NO_MODS, type AttrPatch, type Modifiers } from '../src/engine/model';
+import { adapterFor } from '../src/engine/adapters/registry';
+import { applyPatch, History, snapshot } from '../src/engine/history';
+import { convertToEllipse, convertToPath } from '../src/engine/commands';
+import { dist } from '../src/engine/geom';
 
 const NS = 'http://www.w3.org/2000/svg';
 function el(tag: string, attrs: Record<string, string | number>): Element {

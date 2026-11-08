@@ -150,7 +150,7 @@
     <bpmn:subProcess id="SubProcess_9" name="Selection and transforms" dai:type="dai.types.product.epic" dai:notes="Shared behaviour layered over every shape&#39;s own points.">
       <bpmn:task id="Task_41" name="Bounding box handles" dai:type="dai.types.product.feature" dai:notes="8 resize handles + rotation handle (22px in screen space above the top edge) + movable pivot (default centre). Resizing a basic shape edits native attributes when the element has no rotation/skew; otherwise it writes transform. Handles sit exactly on the corners and edge midpoints of the selection outline (no outward padding), so every corner shows the same kind of placement. Where one of the shape&#39;s own editor points already occupies a box handle position (within the hit radius, e.g. a line endpoint or path anchor on a bbox corner) the box handle is omitted, so each position has exactly one handle and it is the shape&#39;s own point. Shapes whose own editor points already resize them (rect, image, foreignObject, use with width/height, nested svg) show no box resize handles - only the rotation handle and pivot - so there is never a duplicate set. Shapes whose native attributes can&#39;t express a non-uniform scale (circle) resize uniformly from corner handles only and hide edge handles; use Convert to ellipse to stretch. Box handles are hidden while a drag is in progress." dai:priority="must" />
       <bpmn:task id="Task_42" name="Coordinate mapping" dai:type="dai.types.product.feature" dai:notes="Editor points live in local user space. The overlay maps local -&#62; screen with getScreenCTM(); drags map back with the inverse matrix, so handles work inside nested transforms, viewBox scaling and preserveAspectRatio." dai:priority="must" />
-      <bpmn:task id="Task_43" name="Snapping" dai:type="dai.types.product.feature" dai:notes="Snap dragged points to grid, other anchors, segment midpoints, bbox edges/centres and guides. Snap radius 6px screen space; hold Ctrl to bypass." dai:priority="must" />
+      <bpmn:task id="Task_43" name="Snapping" dai:type="dai.types.product.feature" dai:notes="The magnet (Snapping) is the master switch; while the grid is shown, snapping includes the grid (there is no separate snap-to-grid setting). Object targets (anchors, segment midpoints, bbox corners/edge midpoints/centres of every shape, including the selected and just-drawn ones) within 6px screen space win; otherwise positions round to the grid in document user space. Applies to point drags, moving shapes (the selection&#39;s 9 box points snap to objects; otherwise its top-left goes on the grid), bounding-box resizes (the moving handle snaps) and the drawing tools. Every snap shows a marker: red × for objects, accent + for the grid. Hold Ctrl while dragging to bypass. Arrow-key nudges stay exact." dai:priority="must" />
       <bpmn:task id="Task_44" name="Multi-point selection" dai:type="dai.types.product.feature" dai:notes="Shift-click or marquee to select several points across shapes; arrow keys nudge 1 screen pixel (Shift = 10), mapped to local user space through the inverse CTM so nudges feel the same at any zoom." dai:priority="must" />
       <bpmn:task id="Task_45" name="Undo / redo" dai:type="dai.types.product.feature" dai:notes="Each user action (one drag, nudge, insert, delete, node-type change or convert command) is one undo step. Entries are typed: AttributePatch (before/after attribute values per element) or ReplaceElement (old and new element markup with parent and child index, used by Convert to path / Convert to ellipse)." dai:priority="must" />
     </bpmn:subProcess>
@@ -204,6 +204,58 @@
     <bpmn:sequenceFlow id="flow_e56j8811" name="anchor / control / parameter / move" sourceRef="Gateway_1" targetRef="task_14hp2za3" />
     <bpmn:sequenceFlow id="flow_mxvnkgmi" sourceRef="Task_4" targetRef="task_14hp2za3" />
     <bpmn:sequenceFlow id="flow_s8qz3roz" sourceRef="task_14hp2za3" targetRef="Task_5" />
+    <bpmn:subProcess id="task_r9a7jb2m" name="Curve v1 — standalone app" dai:type="dai.types.product.roadmap" dai:stepType="roadmap" dai:notes="v1 feature-complete (M0–M5). Static web app (no backend), Svelte 5 + Vite 8 shell over the framework-free engine; npm run build → dist/ (user deploys). npm run build:embed → dist-embed/curve-editor.{js,css,d.ts} for DAI Studio. Same mountCurve() contract for both.">
+      <bpmn:extensionElements>
+        <dai:fields>
+          <dai:field key="horizon">v1</dai:field>
+          <dai:field key="status">active</dai:field>
+          <dai:field key="theme">Showcase app: Built with DAI Studio; later the SVG editor inside DAI Studio</dai:field>
+        </dai:fields>
+      </bpmn:extensionElements>
+      <bpmn:subProcess id="task_lgb80rr1" name="M0 · Shell &#38; engine API" dai:type="dai.types.product.epic" dai:stepType="epic" dai:status="complete" dai:goal="Restructure into src/engine (framework-free) + src/app (Svelte) + src/embed.ts without changing editing behaviour.">
+        <bpmn:task id="task_7qkacvrx" name="mountCurve / CurveHandle" dai:type="dai.types.software.component" dai:stepType="component" dai:notes="src/embed.ts. mountCurve({target, svg, displayName, host, callbacks, noBadge}) → CurveHandle {load, getSvg, getSnapshot → {svg, revision}, isDirty, markDirty, setSaveState, setDisplayName, undo, redo, zoomToFit, destroy}. Callbacks: onReady, onLoadError, onDirtyChange, onSave, onSaveAs, onOpen, onNew, onDocMetaChange. Mirrors DAI Studio&#39;s mountEditor/EditorHandle; the host owns file I/O." />
+        <bpmn:task id="task_3o2x4luo" name="Editor events" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="Editor extends Emitter: change, doc(stateId), dirty, status, pointer, menu. destroy() removes all listeners." dai:valueStatement="Any shell can follow the engine without polling." />
+        <bpmn:task id="task_rhj1jy8d" name="Dirty tracking" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="Each history entry has an id; stateId = newest applied entry (0 = as loaded). dirty = stateId ≠ savedStateId, so undoing back to the saved state is clean." dai:valueStatement="The app knows exactly when there are unsaved changes." />
+        <bpmn:task id="task_uctktelv" name="Document size" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="newDocument(w, h); setDocSize(w, h) is one undo step writing width/height and scaling viewBox with the size (canvas resize, not content scale)." />
+        <bpmn:task id="task_q2edfknt" name="Command registry" dai:type="dai.types.ai.rule" dai:stepType="rule" dai:notes="Every user command is registered once (id, label, keys, enabled, available) in src/app/commands.ts; toolbar, menus, shortcut sheet and command palette read it." />
+        <bpmn:task id="task_x0qqhchb" name="Scoped styles" dai:type="dai.types.ai.rule" dai:stepType="rule" dai:notes="All styles live under .curve-app (tokens: slate neutrals, indigo accent, brand gradient #4D47BD→#753CEC, Noto Sans) so the editor can be embedded without leaking CSS." />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="task_i6pogf42" name="M1 · Creation tools" dai:type="dai.types.product.epic" dai:stepType="epic" dai:status="complete" dai:goal="Draw new shapes: select, rectangle, ellipse, line, polygon/star, pen, pencil, text.">
+        <bpmn:task id="task_smsjnky3" name="Tool" dai:type="dai.types.software.model" dai:stepType="model" dai:notes="{ id, cursor, pointerDown/Move/Up, keyDown, cancel }. Editor.setTool(id) routes pointer events to the active tool; Select uses the existing gesture code. A finished tool returns to Select with the new shape selected." />
+        <bpmn:task id="task_2a41u6lc" name="Shape tools" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="Rectangle (R), Ellipse (E; Shift = circle, writes &#60;circle&#62;), Line (L; Shift = 15°), Polygon/Star. Alt draws from centre. Snapping applies. One undo step per shape." />
+        <bpmn:task id="task_fxvyultf" name="Pen tool" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="P. Click = corner, drag = smooth C node (Alt: outgoing handle only), click first anchor closes (drag there shapes the closing curve), click last anchor / Enter / Esc finishes, Backspace removes the last node, switching tools keeps the path. Writes one &#60;path&#62;; closed paths get the shape style." />
+        <bpmn:task id="task_6s3wy6qn" name="Pencil tool" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="Freehand stroke simplified with Ramer–Douglas–Peucker (tolerance in screen px) and smoothed into cubic segments (Catmull–Rom → Bézier). Ending near the start closes the path." />
+        <bpmn:task id="task_uizhnojc" name="Text tool" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="T. Click places a &#60;text&#62; and opens an inline box matched to font, size, fill and text-anchor at the current zoom; Enter / Esc / click outside commits; empty text is discarded. Clicking existing text (or double-clicking it with Select) edits it as one undo step; text with &#60;tspan&#62; children is refused." />
+        <bpmn:task id="task_bvdq8667" name="Insert into scope" dai:type="dai.types.ai.rule" dai:stepType="rule" dai:notes="New elements are appended on top of the current scope (document root or entered group) with the default style for their kind (shape / stroke / text); insertion is one ReplaceElement history entry, then the new element is selected and the Select tool returns. Preview elements shown while drawing are never recorded and are excluded from snapping." />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="task_ckbi2iaa" name="M2 · Style inspector" dai:type="dai.types.product.epic" dai:stepType="epic" dai:status="complete" dai:goal="Edit fill, stroke and opacity; numeric geometry; editable attributes.">
+        <bpmn:task id="task_nzqxzo43" name="Fill &#38; stroke" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="fill, stroke, stroke-width, opacities, dasharray, linecap/join, fill-rule. Colour picker with hex, alpha, none, document swatches, EyeDropper where supported. Mixed values shown for multi-selection; one undo step." />
+        <bpmn:task id="task_0c6tixo3" name="Edit style where defined" dai:type="dai.types.ai.rule" dai:stepType="rule" dai:notes="Edit a property where it is already defined (style declaration or presentation attribute); otherwise write a presentation attribute. Never reorder attributes." />
+        <bpmn:task id="task_7w788ygo" name="Geometry &#38; attributes" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="Position &#38; size in the parent&#39;s user space (X/Y/W/H; native resize when unrotated, translate-only when rotated), rotation about the box centre, per-element numeric fields (rx, r, x1…) and points / d text. Editable attribute table with add/remove; on* handler names refused." />
+        <bpmn:task id="task_xgd03si2" name="Live edits are one step" dai:type="dai.types.ai.rule" dai:stepType="rule" dai:notes="Continuous inspector edits (colour drag, arrow-key stepping) are an open preview gesture committed once (Editor.applyPatches live / commitLive). Live patches are computed after resetting the open preview, so they are always relative to the state before the edit began." />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="task_2cx2uor5" name="M3 · Layers &#38; arrange" dai:type="dai.types.product.epic" dai:stepType="epic" dai:status="complete" dai:goal="Layers tree, z-order, group/ungroup, align/distribute, duplicate, flip.">
+        <bpmn:task id="task_ntc3kw5e" name="Layers panel" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="Tree of the document, topmost first; click selects (entering groups), Shift-click adds, keyboard arrows move/expand, double-click or Enter renames the id (validated, unique), drag above/below/into groups (one undo step), visibility writes display=none, lock is editor-only (locked shapes can&#39;t be picked or marquee-selected). Selected row scrolls into view." />
+        <bpmn:task id="task_tctqn6im" name="Arrange" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="⌘] / ⌘[ forward/backward, ⇧⌘] / ⇧⌘[ front/back (relative order kept), ⌘G group, ⇧⌘G ungroup (transform prepended, inheritable style and opacity pushed down; refused when filter/clip/mask would change rendering), ⌘D duplicate (+10 screen px, ids made unique with references rewritten), align to selection or page (single shape), distribute with equal gaps, flip ⇧H / ⇧V, ⌘A select all." />
+        <bpmn:task id="task_5qq5daur" name="History.mutate" dai:type="dai.types.software.component" dai:stepType="component" dai:notes="Ordered DOM insert/remove operations recorded as one ReplaceElement entry; each removal captures its position when it runs, so move sequences (z-order, group, layers drag) undo and redo exactly, including whitespace text nodes." />
+        <bpmn:task id="task_2331rvvf" name="Edit symbols &#38; definitions" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="Double-click a &#60;use&#62; (or Enter, or Object › Edit Symbol) edits the referenced &#60;symbol&#62;/shape on the canvas through that instance: drawing dims, the instance is redrawn on top, a breadcrumb shows #id and how many instances update live, Layers shows the definition&#39;s tree, every tool works inside it, undo works after leaving. Esc (after clearing points/selection), Done or double-clicking outside leaves. Layers › Definitions lists defs (symbol, gradient, pattern, marker, clip path, mask, filter, style, shape) with use counts; symbols open on the canvas (first instance, else at the origin); others and their children (stops, filter primitives) open in an Attributes-only inspector. Go to definition: context menu, Object menu, and go-to buttons on url(#id)/href attributes." dai:valueStatement="Symbols, reusable shapes, gradients, filters and other &#60;defs&#62; are editable instead of locked away." />
+        <bpmn:task id="task_fkzeybyk" name="Definitions map through an instance" dai:type="dai.types.ai.rule" dai:stepType="rule" dai:notes="Definition content never renders by itself, so while editing one, screenMat() for its elements is document CTM · placement (instance CTM · translate(x,y) · symbol viewBox fit) · transforms below the definition; hit-testing uses those boxes because clicks land on the &#60;use&#62;. Snapping ignores definition content except the one being edited." />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="task_7xjxa2mo" name="M4 · Files, clipboard, export" dai:type="dai.types.product.epic" dai:stepType="epic" dai:status="complete" dai:goal="System clipboard, import sanitising, File System Access, autosave, new-document presets, PNG export.">
+        <bpmn:task id="task_35pkviod" name="Clipboard" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="⌘C/⌘X/⌘V through clipboard events (no permission prompt). Copy writes a standalone SVG with the defs the selection references (transitively) and the accumulated ancestor transform. Curve clips paste in place (repeats step +10px), foreign SVG is mapped from its viewBox and centred in the view; ids are made unique with url(#)/href references rewritten. PNG/JPEG/GIF/WebP pastes or drops embed as &#60;image&#62;, fitted to the view." />
+        <bpmn:task id="task_0wpm9qcm" name="Sanitise imports" dai:type="dai.types.ai.rule" dai:stepType="rule" dai:notes="Documents render inline in the app DOM: on open, paste and drop, remove script/iframe/object/embed/frame/base/meta/link elements, on* handlers, javascript:/vbscript:/data:text/html URLs, &#60;set&#62;/&#60;animate&#62; targeting href or on*, and @import in &#60;style&#62;. The status bar reports what was removed. Geometry, styles, gradients and data:image URLs are kept." />
+        <bpmn:task id="task_mmje0333" name="Files &#38; autosave" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="File System Access API: Open keeps the handle and ⌘S writes back (permission re-requested if needed); Save As / Export use the native save dialog; fallback to file input + download. Working copy (markup, name, dirty flag, file handle) autosaved to IndexedDB 600 ms after each change or dirty flip and restored on reload. Recent files (handles) for the welcome screen. beforeunload guard when dirty. New… dialog with size presets; unsaved-changes confirmation before New/Open/Sample." />
+        <bpmn:task id="task_t5v6f6ua" name="Export PNG" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="⇧⌘E Export dialog: PNG at 1–4× or custom scale (clamped to canvas limits), transparent or white background; minified SVG (comments, metadata and inter-element whitespace removed; text content untouched). Copy SVG source." />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="task_1pn34332" name="M5 · Shell polish &#38; showcase" dai:type="dai.types.product.epic" dai:stepType="epic" dai:status="complete" dai:goal="Menus, command palette, welcome screen, Built with DAI Studio badge, PWA manifest, accessibility.">
+        <bpmn:task id="task_35itgk1c" name="Command palette &#38; menus" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="File / Edit / Object / View / Help menus and the ⌘K palette are generated from the command registry (labels, shortcuts, enabled state, check marks for toggles). Menus: keyboard open/move/switch, Esc closes, hover switches while open." />
+        <bpmn:task id="task_bidh9h0n" name="Welcome screen" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="Shown on first visit (no autosaved working copy): blank / icon / square presets, custom size, Open, recent files (host.recentFiles), four original starters with live thumbnails. Esc or × closes; any document load closes it. File › Welcome reopens it." />
+        <bpmn:task id="task_e28o9n2g" name="Built with DAI Studio" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="Badge in the top bar and welcome screen linking to dai.studio; About dialog points to design.dai. Hidden with noBadge when embedded." />
+        <bpmn:task id="task_artfzb74" name="PWA &#38; accessibility" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="manifest.webmanifest with SVG + PNG + maskable icons and file_handlers for .svg (Launch Queue opens them); light / dark / system theme (persisted); roles and labels on menus, tool rail (roving focus), tabs, layers tree, palette (combobox/listbox) and dialogs." />
+        <bpmn:task id="task_i32o1v6z" name="Embed smoke test" dai:type="dai.types.software.test" dai:stepType="test" dai:notes="npm run build:embed, then open /test/embed.html on the dev server: mounts dist-embed/curve-editor.js into a plain page and checks ready, load (with sanitising), noBadge, host-dependent buttons, dirty tracking and destroy. Prints PASS/FAIL." />
+        <bpmn:task id="task_drywim11" name="Zoom navigator" dai:type="dai.types.product.feature" dai:stepType="feature" dai:status="shipped" dai:acceptanceCriteria="Ported from DAI Studio&#39;s ZoomNavigator: always-open card in the canvas&#39;s bottom-left with a minimap of the page and document (re-rendered as an image after changes) and the current view box — drag the box to pan, click the map to jump — plus a log-scale zoom slider (5 %–6400 %; % in its tooltip). The slider and ⌘+ / ⌘− zoom with the selection centred, else centred on the SVG document&#39;s centre; wheel and pinch zoom at the pointer. Replaces the top-bar zoom − / % / + controls." />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_Curve">
     <bpmndi:BPMNPlane id="BPMNPlane_Curve" bpmnElement="Process_Curve">
@@ -458,6 +510,120 @@
         <di:waypoint x="996" y="100" />
         <di:waypoint x="1046" y="100" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="task_r9a7jb2m_di" bpmnElement="task_r9a7jb2m" isExpanded="true">
+        <dc:Bounds x="100" y="1470" width="1590" height="680" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_lgb80rr1_di" bpmnElement="task_lgb80rr1" isExpanded="true">
+        <dc:Bounds x="140" y="1530" width="420" height="270" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_i6pogf42_di" bpmnElement="task_i6pogf42" isExpanded="true">
+        <dc:Bounds x="600" y="1530" width="420" height="270" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_ckbi2iaa_di" bpmnElement="task_ckbi2iaa" isExpanded="true">
+        <dc:Bounds x="1060" y="1530" width="420" height="270" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_2cx2uor5_di" bpmnElement="task_2cx2uor5" isExpanded="true">
+        <dc:Bounds x="140" y="1840" width="780" height="270" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_7xjxa2mo_di" bpmnElement="task_7xjxa2mo" isExpanded="true">
+        <dc:Bounds x="600" y="1840" width="420" height="270" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_1pn34332_di" bpmnElement="task_1pn34332" isExpanded="true">
+        <dc:Bounds x="1060" y="1840" width="600" height="270" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_7qkacvrx_di" bpmnElement="task_7qkacvrx">
+        <dc:Bounds x="170" y="1580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_3o2x4luo_di" bpmnElement="task_3o2x4luo">
+        <dc:Bounds x="300" y="1580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_rhj1jy8d_di" bpmnElement="task_rhj1jy8d">
+        <dc:Bounds x="430" y="1580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_uctktelv_di" bpmnElement="task_uctktelv">
+        <dc:Bounds x="170" y="1690" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_q2edfknt_di" bpmnElement="task_q2edfknt">
+        <dc:Bounds x="300" y="1690" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_x0qqhchb_di" bpmnElement="task_x0qqhchb">
+        <dc:Bounds x="430" y="1690" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_smsjnky3_di" bpmnElement="task_smsjnky3">
+        <dc:Bounds x="630" y="1580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_2a41u6lc_di" bpmnElement="task_2a41u6lc">
+        <dc:Bounds x="760" y="1580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_fxvyultf_di" bpmnElement="task_fxvyultf">
+        <dc:Bounds x="890" y="1580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_6s3wy6qn_di" bpmnElement="task_6s3wy6qn">
+        <dc:Bounds x="630" y="1690" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_uizhnojc_di" bpmnElement="task_uizhnojc">
+        <dc:Bounds x="760" y="1690" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_bvdq8667_di" bpmnElement="task_bvdq8667">
+        <dc:Bounds x="890" y="1690" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_nzqxzo43_di" bpmnElement="task_nzqxzo43">
+        <dc:Bounds x="1090" y="1580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_0c6tixo3_di" bpmnElement="task_0c6tixo3">
+        <dc:Bounds x="1220" y="1580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_7w788ygo_di" bpmnElement="task_7w788ygo">
+        <dc:Bounds x="1350" y="1580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_ntc3kw5e_di" bpmnElement="task_ntc3kw5e">
+        <dc:Bounds x="170" y="1890" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_tctqn6im_di" bpmnElement="task_tctqn6im">
+        <dc:Bounds x="300" y="1890" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_35pkviod_di" bpmnElement="task_35pkviod">
+        <dc:Bounds x="630" y="1890" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_0wpm9qcm_di" bpmnElement="task_0wpm9qcm">
+        <dc:Bounds x="760" y="1890" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_mmje0333_di" bpmnElement="task_mmje0333">
+        <dc:Bounds x="890" y="1890" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_t5v6f6ua_di" bpmnElement="task_t5v6f6ua">
+        <dc:Bounds x="630" y="2000" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_35itgk1c_di" bpmnElement="task_35itgk1c">
+        <dc:Bounds x="1090" y="1890" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_bidh9h0n_di" bpmnElement="task_bidh9h0n">
+        <dc:Bounds x="1220" y="1890" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_e28o9n2g_di" bpmnElement="task_e28o9n2g">
+        <dc:Bounds x="1350" y="1890" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_artfzb74_di" bpmnElement="task_artfzb74">
+        <dc:Bounds x="1090" y="2000" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_xgd03si2_di" bpmnElement="task_xgd03si2">
+        <dc:Bounds x="1090" y="1690" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_5qq5daur_di" bpmnElement="task_5qq5daur">
+        <dc:Bounds x="430" y="1890" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_i32o1v6z_di" bpmnElement="task_i32o1v6z">
+        <dc:Bounds x="1220" y="2000" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_drywim11_di" bpmnElement="task_drywim11">
+        <dc:Bounds x="1530" y="1890" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_2331rvvf_di" bpmnElement="task_2331rvvf">
+        <dc:Bounds x="610" y="1890" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_fkzeybyk_di" bpmnElement="task_fkzeybyk">
+        <dc:Bounds x="790" y="1890" width="100" height="80" />
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

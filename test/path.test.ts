@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { NO_MODS } from '../src/model';
-import { pathAdapter } from '../src/adapters/path';
-import { applyPatch } from '../src/history';
-import { arcCenter, deleteAnchor, ends, parsePath, pointAt, serializePath, splitSegment } from '../src/path/path';
-import { dist, rotate, sub } from '../src/geom';
+import { NO_MODS } from '../src/engine/model';
+import { pathAdapter } from '../src/engine/adapters/path';
+import { applyPatch } from '../src/engine/history';
+import { arcCenter, deleteAnchor, ends, parsePath, pointAt, serializePath, splitSegment } from '../src/engine/path/path';
+import { dist, rotate, sub } from '../src/engine/geom';
 
 const NS = 'http://www.w3.org/2000/svg';
 const path = (d: string) => { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); return p; };

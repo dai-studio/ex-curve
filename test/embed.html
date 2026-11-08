@@ -1,0 +1,51 @@
+<!doctype html>
+<!-- Embed smoke test: `npm run build:embed`, then serve the project root and open /test/embed.html.
+     Mounts the library build into a plain page and round-trips load / edit / getSnapshot. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Curve embed smoke test</title>
+  <link rel="stylesheet" href="/dist-embed/curve-editor.css" />
+  <style>html, body { margin: 0; height: 100%; } #host { height: 80vh; } pre { margin: 8px; font: 12px monospace; }</style>
+</head>
+<body>
+  <div id="host"></div>
+  <pre id="out">running…</pre>
+  <script type="module">
+    import { mountCurve } from '/dist-embed/curve-editor.js';
+    const out = document.getElementById('out');
+    const log = [];
+    const handle = mountCurve({
+      target: document.getElementById('host'),
+      svg: '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><rect id="r" width="50" height="50"/></svg>',
+      displayName: 'embedded.svg',
+      noBadge: true,
+      host: { kind: 'desktop' },
+      callbacks: {
+        onReady: () => log.push('ready'),
+        onDirtyChange: (d) => log.push(`dirty:${d}`),
+        onSave: (snap) => { log.push(`save:${snap.revision}`); handle.setSaveState('saved', undefined, snap.revision); },
+      },
+    });
+    const a = handle.getSnapshot();
+    handle.load('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" onload="alert(1)"><circle r="3"/></svg>', 'two.svg');
+    const b = handle.getSnapshot();
+    const checks = {
+      ready: log.includes('ready'),
+      initial: a.svg.includes('id="r"') && a.revision === 0,
+      reloaded: b.svg.includes('<circle') && !b.svg.includes('onload'),
+      noBadge: !document.querySelector('.curve-app .badge'),
+      saveShown: !!document.querySelector('[aria-label=Save]'),
+      noOpenButton: !document.querySelector('[aria-label="Open…"]'),
+      clean: handle.isDirty === false,
+    };
+    handle.markDirty();
+    checks.markDirty = handle.isDirty === true;
+    handle.destroy();
+    checks.destroyed = !document.querySelector('.curve-app');
+    const ok = Object.values(checks).every(Boolean);
+    out.textContent = (ok ? 'PASS ' : 'FAIL ') + JSON.stringify({ checks, log });
+    document.title = ok ? 'PASS' : 'FAIL';
+  </script>
+</body>
+</html>

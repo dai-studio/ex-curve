@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist-embed/types"
+  },
+  "include": [],
+  "files": ["src/embed.ts", "src/host/fs-access.d.ts"]
+}
