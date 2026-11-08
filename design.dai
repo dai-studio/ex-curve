@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dai="https://dai.studio/schema/dai/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_Curve" targetNamespace="https://dai.studio/workflow">
+  <bpmn:process id="Process_Curve" name="Curve - SVG Editor Design" isExecutable="false">
+    <bpmn:extensionElements>
+      <dai:workflowMeta description="Design for Curve, an SVG editor where every SVG shape type is editable through on-canvas editor points." defaultModel="" targetLanguage="typescript" targetFramework="" version="1.0">
+        <dai:taskTypeEntry stepType="" description="A generic work item or activity in the process flow." />
+        <dai:taskTypeEntry type="dai.types.ai.context" stepType="context" description="Background knowledge, grounding data, or reference material that informs downstream steps. Does not produce output itself — it shapes how the AI reasons." />
+        <dai:taskTypeEntry type="dai.types.software.model" stepType="model" description="A data schema or structured type definition. Documents the shape of data flowing through the system and the notation used." />
+        <dai:taskTypeEntry type="dai.types.business.requirement" stepType="requirement" description="A business or functional requirement with priority, source, acceptance criteria, and status. Bridges business goals and technical delivery using the MoSCoW prioritisation framework." />
+        <dai:taskTypeEntry type="dai.types.software.test" stepType="test" description="A test case or verification condition — documents what is being tested, how to run it, and what constitutes a pass." />
+        <dai:taskTypeEntry type="dai.types.software.component" stepType="component" description="A UI or software component — its type, props/interface, and usage description. Use it to document your component library, design system elements, or reusable building blocks." />
+        <dai:taskTypeEntry type="dai.types.product.feature" stepType="feature" description="A discrete product capability that delivers value to users. The core unit of product delivery — sits above user stories and below epics in the agile hierarchy." />
+        <dai:taskTypeEntry type="dai.types.ai.rule" stepType="rule" description="A constraint, policy, or business rule the AI must respect and enforce throughout the workflow. Scope, priority, and enforcement level determine how strictly it applies." />
+      </dai:workflowMeta>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="StartEvent_1" name="Element selected" dai:notes="User clicks a shape on the canvas." />
+    <bpmn:task id="Task_1" name="Resolve adapter" dai:notes="Look up the ShapeAdapter by tagName and call getPoints()." />
+    <bpmn:task id="Task_2" name="Render editor points" dai:notes="Overlay maps points to screen via CTM and draws handles by kind." />
+    <bpmn:task id="Task_3" name="Pointer down on handle" dai:notes="Hit-test the overlay (12px hit area), capture the pointer and record the start position and modifiers. When several handles are within reach, pick the lowest score = screen distance + kind priority x 1.5px, with priority anchor 0, move/parameter 1, control 2, ghost 3, bounding 4 - anchors win ties but a clearly closer ghost or control is still reachable." />
+    <bpmn:exclusiveGateway id="Gateway_1" name="Point kind?" dai:notes="Decided on pointerdown: ghost points materialise (insert vertex / convert S-&#62;C, T-&#62;Q) before the drag starts, so the new point exists for the whole drag.">
+      <bpmn:outgoing>flow_e56j8811</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Task_4" name="Materialise ghost" dai:notes="insertPoint() or segment conversion, then continue as a normal point drag on the materialised point.">
+      <bpmn:outgoing>flow_mxvnkgmi</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_5" name="Apply attribute patch" dai:notes="dragPoint() returns a patch; write attributes, push to history.">
+      <bpmn:incoming>flow_s8qz3roz</bpmn:incoming>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_1" name="Edit committed" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_1" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_1" targetRef="Task_2" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_2" targetRef="Task_3" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_3" targetRef="Gateway_1" />
+    <bpmn:sequenceFlow id="Flow_6" name="ghost" sourceRef="Gateway_1" targetRef="Task_4" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Task_5" targetRef="EndEvent_1" />
+    <bpmn:task id="Task_6" name="Product overview" dai:type="dai.types.ai.context" dai:stepType="context" dai:notes="Curve: an SVG editor where every shape type is directly editable through on-canvas editor points." dai:source="design" dai:format="markdown" dai:scope="global">
+      <bpmn:extensionElements>
+        <dai:fields>
+          <dai:field key="content">Curve is a browser-based SVG editor. Every SVG shape element can be selected and edited directly on the canvas through editor points (handles). Edits write straight back to the element's native SVG attributes - no conversion to paths unless the user asks for it - so documents round-trip cleanly.</dai:field>
+        </dai:fields>
+      </bpmn:extensionElements>
+    </bpmn:task>
+    <bpmn:task id="Task_7" name="Editor point vocabulary" dai:type="dai.types.ai.context" dai:stepType="context" dai:notes="Shared vocabulary for handle kinds and their glyphs." dai:format="markdown" dai:scope="global" dai:content="Anchor: a point the geometry passes through (vertex, path endpoint). Square handle.&#10;Control point: a Bezier control (C/S/Q). Round handle joined to its anchor by a tangent line.&#10;Ghost point: an implicit/derived point (reflected S/T control, segment midpoint for insertion). Hollow handle; dragging it materialises it.&#10;Parameter handle: drives a scalar attribute (r, rx, ry, corner radius). Diamond handle.&#10;Move handle: translates the whole element (e.g. line midpoint). Four-arrow cross handle.&#10;Bounding handle: one of 8 resize handles on the selection box plus a rotation handle and a pivot." />
+    <bpmn:subProcess id="SubProcess_1" name="Shape editing" dai:type="dai.types.product.epic" dai:notes="Every SVG shape element exposes editor points through its ShapeAdapter. Basic shapes keep native attributes; nothing is silently converted to &#60;path&#62;.">
+      <bpmn:subProcess id="SubProcess_2" name="Rect editor points" dai:type="dai.types.product.feature" dai:notes="&#60;rect x y width height rx ry&#62;. Points: 4 corner anchors (resize, opposite corner fixed), 4 edge-midpoint anchors (single-axis resize), 1 rx parameter handle on the top edge and 1 ry parameter handle on the right edge, inset from the top-right corner. When a radius is 0 its handle is offset 14px in screen space along its edge so it doesn&#39;t sit on the corner anchor. Negative width/height from dragging past the opposite edge flips x/y so width/height stay positive. The corner anchors double as the bounding-box resize handles (see Bounding box handles)." dai:priority="must">
+        <bpmn:task id="Task_8" name="RectGeometry" dai:type="dai.types.software.model" dai:notes="Native rect attributes written by the adapter." dai:modelFormat="typescript-interface">
+          <bpmn:extensionElements>
+            <dai:properties>
+              <dai:property name="x" type="float" />
+              <dai:property name="y" type="float" />
+              <dai:property name="width" type="float" />
+              <dai:property name="height" type="float" />
+              <dai:property name="rx" type="float" />
+              <dai:property name="ry" type="float" />
+            </dai:properties>
+          </bpmn:extensionElements>
+        </bpmn:task>
+        <bpmn:task id="Task_9" name="Corner radius clamping" dai:type="dai.types.business.requirement" dai:notes="rx is clamped to [0, width/2], ry to [0, height/2]. If only rx is set, ry handle mirrors it (SVG auto rule) until dragged. Alt-drag a radius handle sets rx=ry." dai:priority="must" />
+        <bpmn:task id="Task_10" name="Rect modifiers" dai:type="dai.types.business.requirement" dai:notes="Shift on a corner keeps aspect ratio; Alt resizes from the centre." dai:priority="must" />
+        <bpmn:task id="Task_11" name="Rect handle round-trip" dai:type="dai.types.software.test" dai:notes="Drag each of the 10 handles; assert only the expected attributes change and the shape re-renders identically after serialize/parse." dai:testType="unit" />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="SubProcess_3" name="Circle editor points" dai:type="dai.types.product.feature" dai:notes="&#60;circle cx cy r&#62;. Points: 1 centre anchor (moves cx,cy) and 4 radius parameter handles at 0/90/180/270 degrees. Dragging any radius handle sets r = distance(pointer, centre); the circle always stays a circle. Converting to &#60;ellipse&#62; is an explicit &#39;Convert to ellipse&#39; command (context menu / command palette), never a drag gesture; it preserves id, style and transform and sets rx = ry = r." dai:priority="must">
+        <bpmn:task id="Task_12" name="CircleGeometry" dai:type="dai.types.software.model" dai:notes="Native circle attributes." dai:modelFormat="typescript-interface">
+          <bpmn:extensionElements>
+            <dai:properties>
+              <dai:property name="cx" type="float" />
+              <dai:property name="cy" type="float" />
+              <dai:property name="r" type="float" />
+            </dai:properties>
+          </bpmn:extensionElements>
+        </bpmn:task>
+        <bpmn:task id="Task_13" name="Minimum radius" dai:type="dai.types.business.requirement" dai:notes="r is clamped to &#62;= 0; at r = 0 the radius handles collapse onto the centre and are offset 8px in screen space so they stay grabbable." dai:priority="must" />
+        <bpmn:task id="Task_14" name="Circle radial constraint" dai:type="dai.types.software.test" dai:notes="Drag a radius handle diagonally; assert cx/cy unchanged and r equals the pointer distance." dai:testType="unit" />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="SubProcess_4" name="Ellipse editor points" dai:type="dai.types.product.feature" dai:notes="&#60;ellipse cx cy rx ry&#62;. Points: 1 centre anchor, 2 rx parameter handles (left/right, constrained to x-axis), 2 ry parameter handles (top/bottom, constrained to y-axis). Shift keeps rx:ry ratio; Alt makes rx = ry." dai:priority="must">
+        <bpmn:task id="Task_15" name="EllipseGeometry" dai:type="dai.types.software.model" dai:notes="Native ellipse attributes." dai:modelFormat="typescript-interface">
+          <bpmn:extensionElements>
+            <dai:properties>
+              <dai:property name="cx" type="float" />
+              <dai:property name="cy" type="float" />
+              <dai:property name="rx" type="float" />
+              <dai:property name="ry" type="float" />
+            </dai:properties>
+          </bpmn:extensionElements>
+        </bpmn:task>
+        <bpmn:task id="Task_16" name="Ellipse axis constraint" dai:type="dai.types.software.test" dai:notes="Drag an rx handle vertically; assert ry and cy unchanged." dai:testType="unit" />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="SubProcess_5" name="Line editor points" dai:type="dai.types.product.feature" dai:notes="&#60;line x1 y1 x2 y2&#62;. Points: 2 endpoint anchors (x1,y1) and (x2,y2), plus a midpoint move handle that translates the whole line (writes x1,y1,x2,y2). Shift snaps the dragged endpoint&#39;s angle to 15 degree increments around the other endpoint." dai:priority="must">
+        <bpmn:task id="Task_17" name="LineGeometry" dai:type="dai.types.software.model" dai:notes="Native line attributes." dai:modelFormat="typescript-interface">
+          <bpmn:extensionElements>
+            <dai:properties>
+              <dai:property name="x1" type="float" />
+              <dai:property name="y1" type="float" />
+              <dai:property name="x2" type="float" />
+              <dai:property name="y2" type="float" />
+            </dai:properties>
+          </bpmn:extensionElements>
+        </bpmn:task>
+        <bpmn:task id="Task_18" name="Line angle snap" dai:type="dai.types.software.test" dai:notes="Shift-drag endpoint; assert angle is a multiple of 15 degrees." dai:testType="unit" />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="SubProcess_6" name="Polyline editor points" dai:type="dai.types.product.feature" dai:notes="&#60;polyline points&#62;. Points: one anchor per vertex from the points attribute; one ghost point at the midpoint of each segment - dragging it inserts a vertex. Backspace/Delete removes the selected vertex (double-click never deletes). Marquee selects multiple vertices to move together. Minimum 2 vertices; deletion below that is refused." dai:priority="must">
+        <bpmn:task id="Task_19" name="PolyGeometry" dai:type="dai.types.software.model" dai:notes="Ordered list of [x,y]; serialised as &#39;x,y x,y ...&#39; with configurable precision." dai:modelFormat="typescript-interface">
+          <bpmn:extensionElements>
+            <dai:properties>
+              <dai:property name="points" type="list" />
+            </dai:properties>
+          </bpmn:extensionElements>
+        </bpmn:task>
+        <bpmn:task id="Task_20" name="Polyline insert/delete" dai:type="dai.types.software.test" dai:notes="Drag segment ghost: points length +1 at the right index. Delete vertex: length -1. Cannot go below 2." dai:testType="unit" />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="SubProcess_7" name="Polygon editor points" dai:type="dai.types.product.feature" dai:notes="&#60;polygon points&#62;. Points: one anchor per vertex from the points attribute; one ghost point at the midpoint of each segment - dragging it inserts a vertex. Backspace/Delete removes the selected vertex (double-click never deletes). Marquee selects multiple vertices to move together. Includes the implicit closing segment (last -&#62; first) with its own ghost. Minimum 3 vertices." dai:priority="must">
+        <bpmn:task id="Task_21" name="Polygon closing segment ghost" dai:type="dai.types.software.test" dai:notes="Drag the ghost between last and first vertex; assert new vertex appended at end of points." dai:testType="unit" />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="SubProcess_8" name="Path editor points" dai:type="dai.types.product.feature" dai:notes="&#60;path d&#62;. d is parsed into absolute segments for editing; the original command letters (relative/absolute, implicit repeats, shorthand) are remembered per segment and re-emitted on save so diffs stay minimal. Each segment contributes the points below; anchors are shared between consecutive segments." dai:priority="must">
+        <bpmn:task id="Task_22" name="M / m - moveto" dai:type="dai.types.software.component" dai:notes="One anchor: subpath start point. Dragging it also moves the Z closing target." />
+        <bpmn:task id="Task_23" name="L / l - lineto" dai:type="dai.types.software.component" dai:notes="One anchor at the segment end point." />
+        <bpmn:task id="Task_24" name="H / h - horizontal" dai:type="dai.types.software.component" dai:notes="One anchor constrained to the x-axis (writes only x)." />
+        <bpmn:task id="Task_25" name="V / v - vertical" dai:type="dai.types.software.component" dai:notes="One anchor constrained to the y-axis (writes only y)." />
+        <bpmn:task id="Task_26" name="C / c - cubic Bezier" dai:type="dai.types.software.component" dai:notes="End anchor + 2 control points: cp1 drawn as a tangent from the previous anchor, cp2 from this segment&#39;s end anchor." />
+        <bpmn:task id="Task_27" name="S / s - smooth cubic" dai:type="dai.types.software.component" dai:notes="End anchor + 1 control point (cp2). cp1 is a ghost point = reflection of the previous segment&#39;s cp2. Dragging the ghost converts the segment to C." />
+        <bpmn:task id="Task_28" name="Q / q - quadratic Bezier" dai:type="dai.types.software.component" dai:notes="End anchor + 1 control point shared by both tangents (drawn from both the previous anchor and this end anchor)." />
+        <bpmn:task id="Task_29" name="T / t - smooth quadratic" dai:type="dai.types.software.component" dai:notes="End anchor; control point is a ghost reflected from the previous Q/T control. Dragging it converts the segment to Q." />
+        <bpmn:task id="Task_30" name="A / a - elliptical arc" dai:type="dai.types.software.component" dai:notes="End anchor + arc parameter handles: rx and ry handles placed on the arc&#39;s ellipse (computed via endpoint-to-centre parameterisation) and a rotation handle for x-axis-rotation. Handles are placed on the visible (swept) part of the ellipse, at angles that keep them clear of the flip ghosts. large-arc / sweep flags are toggled from the anchor&#39;s context menu, or by clicking one of the hollow &#39;flip&#39; ghosts drawn at the midpoints of the alternative arcs (the other flag combinations); flip ghosts whose arc would render identically to the current one (e.g. a half-ellipse where large-arc is irrelevant) are not shown. Dragging the end anchor never changes flags. Radii: when rx/ry are too small SVG scales them up at render time; moving the endpoint leaves the authored rx/ry untouched, while dragging a radius handle starts from and writes the effective (scaled) radii so the handle never jumps. Dragging the rotation handle is continuous regardless of which side of the centre it is on. A non-uniform resize of a rotated arc falls back to a transform." />
+        <bpmn:task id="Task_31" name="Z / z - closepath" dai:type="dai.types.software.component" dai:notes="No own point; shows a ghost at the closing segment midpoint for insertion (inserting converts to L + Z)." />
+        <bpmn:task id="Task_32" name="PathSegment" dai:type="dai.types.software.model" dai:notes="Normalised absolute segment used while editing." dai:modelFormat="typescript-interface">
+          <bpmn:extensionElements>
+            <dai:properties>
+              <dai:property name="command" type="str" />
+              <dai:property name="relative" type="bool" />
+              <dai:property name="points" type="list" />
+              <dai:property name="rx" type="float" />
+              <dai:property name="ry" type="float" />
+              <dai:property name="rotation" type="float" />
+              <dai:property name="largeArc" type="bool" />
+              <dai:property name="sweep" type="bool" />
+              <dai:property name="subpathIndex" type="int" />
+            </dai:properties>
+          </bpmn:extensionElements>
+        </bpmn:task>
+        <bpmn:task id="Task_33" name="Anchor node types" dai:type="dai.types.business.requirement" dai:notes="Each anchor between curve segments has a node type: corner (handles independent), smooth (handles collinear, lengths independent), symmetric (collinear and equal length). Until set explicitly the type is inferred from the geometry; an anchor followed by S counts as symmetric. Setting smooth or corner on such an anchor first converts the S to C so the handle can move independently. Alt-drag a control breaks smoothness. Double-click an anchor cycles corner -&#62; smooth -&#62; symmetric. Double-click never deletes a point on any shape; deletion is Backspace/Delete only." dai:priority="must" />
+        <bpmn:task id="Task_34" name="Path point insertion and deletion" dai:type="dai.types.business.requirement" dai:notes="Ghost midpoints on every segment; inserting splits the segment with de Casteljau (C/Q) or arc splitting (A) so the shape is unchanged. Deleting an anchor merges its two neighbouring segments into one whose command matches them: both straight (L/H/V) -&#62; L; two arcs on the same ellipse -&#62; one A; any curve (C/S/Q/T) or mixed -&#62; best-fit C. The merged segment keeps the first segment&#39;s relative/absolute style." dai:priority="must" />
+        <bpmn:task id="Task_35" name="Path command preservation" dai:type="dai.types.software.test" dai:notes="Parse and re-serialise a d containing every command in relative and absolute form; editing one point changes only that segment&#39;s text." dai:testType="unit" />
+        <bpmn:task id="Task_36" name="Arc endpoint parameterisation" dai:type="dai.types.software.test" dai:notes="Arc rx/ry handles land on the rendered ellipse within 0.01 user units for rotated and non-rotated arcs." dai:testType="unit" />
+      </bpmn:subProcess>
+      <bpmn:task id="Task_37" name="Text editor points" dai:type="dai.types.product.feature" dai:notes="&#60;text x y&#62; / &#60;tspan&#62;. Points: 1 anchor at the first glyph&#39;s baseline origin (x,y), positioned according to text-anchor (start/middle/end). Corner bounding handles scale font-size proportionally (aspect ratio is inherent, no modifier needed); edge handles write a transform for non-uniform stretch. Alt still resizes from the centre. Per-glyph x/dx lists are shown as read-only markers in v1." dai:priority="should" />
+      <bpmn:task id="Task_38" name="Image / foreignObject / use editor points" dai:type="dai.types.product.feature" dai:notes="&#60;image&#62;, &#60;foreignObject&#62;, &#60;use&#62;, nested &#60;svg&#62;: rect-like x/y/width/height handles (corners + edge midpoints). &#60;use&#62; without width/height exposes only an x,y anchor; editing the referenced symbol requires entering it." dai:priority="should" />
+      <bpmn:task id="Task_39" name="Group editor points" dai:type="dai.types.product.feature" dai:notes="&#60;g&#62;, &#60;a&#62;, &#60;switch&#62;: no geometry of their own - only the transform bounding box. Double-click enters the group so child shapes expose their editor points." dai:priority="must" />
+      <bpmn:task id="Task_40" name="Convert to path" dai:type="dai.types.product.feature" dai:notes="Any adapter&#39;s toPath() replaces the element with an equivalent &#60;path&#62;, preserving id, style and transform." dai:priority="should" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="SubProcess_9" name="Selection and transforms" dai:type="dai.types.product.epic" dai:notes="Shared behaviour layered over every shape&#39;s own points.">
+      <bpmn:task id="Task_41" name="Bounding box handles" dai:type="dai.types.product.feature" dai:notes="8 resize handles + rotation handle (22px in screen space above the top edge) + movable pivot (default centre). Resizing a basic shape edits native attributes when the element has no rotation/skew; otherwise it writes transform. Handles sit exactly on the corners and edge midpoints of the selection outline (no outward padding), so every corner shows the same kind of placement. Where one of the shape&#39;s own editor points already occupies a box handle position (within the hit radius, e.g. a line endpoint or path anchor on a bbox corner) the box handle is omitted, so each position has exactly one handle and it is the shape&#39;s own point. Shapes whose own editor points already resize them (rect, image, foreignObject, use with width/height, nested svg) show no box resize handles - only the rotation handle and pivot - so there is never a duplicate set. Shapes whose native attributes can&#39;t express a non-uniform scale (circle) resize uniformly from corner handles only and hide edge handles; use Convert to ellipse to stretch. Box handles are hidden while a drag is in progress." dai:priority="must" />
+      <bpmn:task id="Task_42" name="Coordinate mapping" dai:type="dai.types.product.feature" dai:notes="Editor points live in local user space. The overlay maps local -&#62; screen with getScreenCTM(); drags map back with the inverse matrix, so handles work inside nested transforms, viewBox scaling and preserveAspectRatio." dai:priority="must" />
+      <bpmn:task id="Task_43" name="Snapping" dai:type="dai.types.product.feature" dai:notes="Snap dragged points to grid, other anchors, segment midpoints, bbox edges/centres and guides. Snap radius 6px screen space; hold Ctrl to bypass." dai:priority="must" />
+      <bpmn:task id="Task_44" name="Multi-point selection" dai:type="dai.types.product.feature" dai:notes="Shift-click or marquee to select several points across shapes; arrow keys nudge 1 screen pixel (Shift = 10), mapped to local user space through the inverse CTM so nudges feel the same at any zoom." dai:priority="must" />
+      <bpmn:task id="Task_45" name="Undo / redo" dai:type="dai.types.product.feature" dai:notes="Each user action (one drag, nudge, insert, delete, node-type change or convert command) is one undo step. Entries are typed: AttributePatch (before/after attribute values per element) or ReplaceElement (old and new element markup with parent and child index, used by Convert to path / Convert to ellipse)." dai:priority="must" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="SubProcess_10" name="Editor rules" dai:notes="Cross-cutting constraints.">
+      <bpmn:task id="Task_46" name="Handles are screen-sized" dai:type="dai.types.ai.rule" dai:stepType="rule" dai:notes="Handle glyphs are 8px (anchors, parameters, move) and 6px (controls/ghosts) in screen space regardless of zoom; hit area 12px." dai:scope="global" dai:rulePriority="high" dai:enforcement="hard" />
+      <bpmn:task id="Task_47" name="Write native attributes" dai:type="dai.types.ai.rule" dai:stepType="rule" dai:notes="An edit must only touch the attributes listed on the dragged EditorPoint (or transform). Never rewrite unrelated attributes or reorder them. Exception: explicit convert commands (Convert to path / ellipse) replace the element, preserving id, style, transform and all non-geometry attributes in their original order." dai:scope="global" dai:rulePriority="critical" dai:enforcement="hard" />
+      <bpmn:task id="Task_48" name="Numeric precision" dai:type="dai.types.ai.rule" dai:stepType="rule" dai:notes="Serialise coordinates with at most 3 decimals (configurable), trimming trailing zeros." dai:scope="global" dai:rulePriority="medium" dai:enforcement="soft" />
+      <bpmn:task id="Task_49" name="Point visibility" dai:type="dai.types.ai.rule" dai:stepType="rule" dai:notes="Control points are shown only for the selected anchor and its neighbours to reduce clutter; all anchors of the selected shape are always visible. Insertion ghosts (segment midpoints) appear only for the segment under the pointer and the segments next to the selected anchor; reflected S/T control ghosts follow the control-point rule. Move handles are always visible." dai:scope="global" dai:rulePriority="medium" dai:enforcement="soft" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="SubProcess_11" name="Architecture" dai:notes="Runtime components.">
+      <bpmn:task id="Task_50" name="Canvas" dai:type="dai.types.software.component" dai:notes="Renders the SVG document unmodified inside an &#60;svg&#62; root; handles pan/zoom via viewBox." />
+      <bpmn:task id="Task_51" name="Overlay layer" dai:type="dai.types.software.component" dai:notes="Separate SVG layer above the canvas drawing selection box, editor points, tangent lines and snap guides in screen space." />
+      <bpmn:task id="Task_52" name="Adapter registry" dai:type="dai.types.software.component" dai:notes="Maps tagName -&#62; ShapeAdapter: rect, circle, ellipse, line, polyline, polygon, path, text + tspan (text adapter), image + foreignObject + use + svg (box adapter), g + a + switch (group adapter)." />
+      <bpmn:task id="Task_53" name="Path parser / serializer" dai:type="dai.types.software.component" dai:notes="Tokenises d into PathSegment[] with source-format metadata; serialises back preserving command style." />
+      <bpmn:task id="Task_54" name="History store" dai:type="dai.types.software.component" dai:notes="Command stack of typed history entries (AttributePatch | ReplaceElement) for undo/redo." />
+      <bpmn:task id="Task_55" name="EditorPoint" dai:type="dai.types.software.model" dai:notes="Runtime handle descriptor produced by each shape adapter. kind = anchor|control|ghost|parameter|move|bounding. x/y are in the element&#39;s local user space; the overlay maps them through the element CTM to screen. attr lists the SVG attributes the point writes. constraint = none|x-axis|y-axis|radial|on-ellipse." dai:modelFormat="typescript-interface">
+        <bpmn:extensionElements>
+          <dai:properties>
+            <dai:property name="id" type="str" />
+            <dai:property name="elementId" type="str" />
+            <dai:property name="kind" type="str" />
+            <dai:property name="role" type="str" />
+            <dai:property name="x" type="float" />
+            <dai:property name="y" type="float" />
+            <dai:property name="attr" type="list" />
+            <dai:property name="segmentIndex" type="int" />
+            <dai:property name="constraint" type="str" />
+            <dai:property name="linkedPointIds" type="list" />
+          </dai:properties>
+        </bpmn:extensionElements>
+      </bpmn:task>
+      <bpmn:task id="Task_56" name="ShapeAdapter" dai:type="dai.types.software.model" dai:notes="Interface every shape implements: getPoints(el) -&#62; EditorPoint[]; dragPoint(el, pointId, localXY, modifiers) -&#62; attribute patch; insertPoint / deletePoint optional (poly*, path); toPath(el) -&#62; d string for &#39;Convert to path&#39;." dai:modelFormat="typescript-interface">
+        <bpmn:extensionElements>
+          <dai:properties>
+            <dai:property name="tagName" type="str" />
+            <dai:property name="getPoints" type="str" />
+            <dai:property name="dragPoint" type="str" />
+            <dai:property name="insertPoint" type="str" />
+            <dai:property name="deletePoint" type="str" />
+            <dai:property name="getBBox" type="str" />
+            <dai:property name="toPath" type="str" />
+          </dai:properties>
+        </bpmn:extensionElements>
+      </bpmn:task>
+    </bpmn:subProcess>
+    <bpmn:task id="task_14hp2za3" name="Drag editor point" dai:notes="Pointer move: map to local space, apply snapping and modifier keys, call dragPoint() for a live preview. A pointerup with no movement past the drag threshold cancels: any materialised ghost is rolled back and no history entry is pushed.">
+      <bpmn:incoming>flow_e56j8811</bpmn:incoming>
+      <bpmn:incoming>flow_mxvnkgmi</bpmn:incoming>
+      <bpmn:outgoing>flow_s8qz3roz</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="flow_e56j8811" name="anchor / control / parameter / move" sourceRef="Gateway_1" targetRef="task_14hp2za3" />
+    <bpmn:sequenceFlow id="flow_mxvnkgmi" sourceRef="Task_4" targetRef="task_14hp2za3" />
+    <bpmn:sequenceFlow id="flow_s8qz3roz" sourceRef="task_14hp2za3" targetRef="Task_5" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Curve">
+    <bpmndi:BPMNPlane id="BPMNPlane_Curve" bpmnElement="Process_Curve">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="100" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_1_di" bpmnElement="Task_1">
+        <dc:Bounds x="186" y="60" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_2_di" bpmnElement="Task_2">
+        <dc:Bounds x="376" y="60" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_3_di" bpmnElement="Task_3">
+        <dc:Bounds x="566" y="60" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1_di" bpmnElement="Gateway_1">
+        <dc:Bounds x="756" y="75" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_4_di" bpmnElement="Task_4">
+        <dc:Bounds x="711" y="200" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_5_di" bpmnElement="Task_5">
+        <dc:Bounds x="1046" y="60" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="1236" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_6_di" bpmnElement="Task_6">
+        <dc:Bounds x="100" y="320" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_7_di" bpmnElement="Task_7">
+        <dc:Bounds x="340" y="320" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_8_di" bpmnElement="Task_8">
+        <dc:Bounds x="620" y="400" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_9_di" bpmnElement="Task_9">
+        <dc:Bounds x="820" y="400" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_10_di" bpmnElement="Task_10">
+        <dc:Bounds x="1020" y="400" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_11_di" bpmnElement="Task_11">
+        <dc:Bounds x="1220" y="400" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_2_di" bpmnElement="SubProcess_2" isExpanded="true">
+        <dc:Bounds x="600" y="360" width="820" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_12_di" bpmnElement="Task_12">
+        <dc:Bounds x="1460" y="400" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_13_di" bpmnElement="Task_13">
+        <dc:Bounds x="1660" y="400" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_14_di" bpmnElement="Task_14">
+        <dc:Bounds x="1860" y="400" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_3_di" bpmnElement="SubProcess_3" isExpanded="true">
+        <dc:Bounds x="1440" y="360" width="620" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_15_di" bpmnElement="Task_15">
+        <dc:Bounds x="2100" y="400" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_16_di" bpmnElement="Task_16">
+        <dc:Bounds x="2300" y="400" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_4_di" bpmnElement="SubProcess_4" isExpanded="true">
+        <dc:Bounds x="2080" y="360" width="420" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_17_di" bpmnElement="Task_17">
+        <dc:Bounds x="2540" y="400" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_18_di" bpmnElement="Task_18">
+        <dc:Bounds x="2740" y="400" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_5_di" bpmnElement="SubProcess_5" isExpanded="true">
+        <dc:Bounds x="2520" y="360" width="420" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_19_di" bpmnElement="Task_19">
+        <dc:Bounds x="620" y="560" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_20_di" bpmnElement="Task_20">
+        <dc:Bounds x="820" y="560" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_6_di" bpmnElement="SubProcess_6" isExpanded="true">
+        <dc:Bounds x="600" y="520" width="420" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_21_di" bpmnElement="Task_21">
+        <dc:Bounds x="1060" y="560" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_7_di" bpmnElement="SubProcess_7" isExpanded="true">
+        <dc:Bounds x="1040" y="520" width="220" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_22_di" bpmnElement="Task_22">
+        <dc:Bounds x="1300" y="560" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_23_di" bpmnElement="Task_23">
+        <dc:Bounds x="1500" y="560" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_24_di" bpmnElement="Task_24">
+        <dc:Bounds x="1700" y="560" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_25_di" bpmnElement="Task_25">
+        <dc:Bounds x="1900" y="560" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_26_di" bpmnElement="Task_26">
+        <dc:Bounds x="1300" y="660" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_27_di" bpmnElement="Task_27">
+        <dc:Bounds x="1500" y="660" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_28_di" bpmnElement="Task_28">
+        <dc:Bounds x="1700" y="660" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_29_di" bpmnElement="Task_29">
+        <dc:Bounds x="1900" y="660" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_30_di" bpmnElement="Task_30">
+        <dc:Bounds x="1300" y="760" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_31_di" bpmnElement="Task_31">
+        <dc:Bounds x="1500" y="760" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_32_di" bpmnElement="Task_32">
+        <dc:Bounds x="1700" y="760" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_33_di" bpmnElement="Task_33">
+        <dc:Bounds x="1900" y="760" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_34_di" bpmnElement="Task_34">
+        <dc:Bounds x="1300" y="860" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_35_di" bpmnElement="Task_35">
+        <dc:Bounds x="1500" y="860" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_36_di" bpmnElement="Task_36">
+        <dc:Bounds x="1700" y="860" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_8_di" bpmnElement="SubProcess_8" isExpanded="true">
+        <dc:Bounds x="1280" y="520" width="820" height="440" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_37_di" bpmnElement="Task_37">
+        <dc:Bounds x="2120" y="520" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_38_di" bpmnElement="Task_38">
+        <dc:Bounds x="600" y="980" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_39_di" bpmnElement="Task_39">
+        <dc:Bounds x="800" y="980" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_40_di" bpmnElement="Task_40">
+        <dc:Bounds x="1000" y="980" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_1_di" bpmnElement="SubProcess_1" isExpanded="true">
+        <dc:Bounds x="580" y="320" width="2380" height="760" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_41_di" bpmnElement="Task_41">
+        <dc:Bounds x="120" y="1180" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_42_di" bpmnElement="Task_42">
+        <dc:Bounds x="320" y="1180" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_43_di" bpmnElement="Task_43">
+        <dc:Bounds x="520" y="1180" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_44_di" bpmnElement="Task_44">
+        <dc:Bounds x="720" y="1180" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_45_di" bpmnElement="Task_45">
+        <dc:Bounds x="120" y="1280" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_9_di" bpmnElement="SubProcess_9" isExpanded="true">
+        <dc:Bounds x="100" y="1140" width="820" height="240" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_46_di" bpmnElement="Task_46">
+        <dc:Bounds x="1000" y="1180" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_47_di" bpmnElement="Task_47">
+        <dc:Bounds x="1200" y="1180" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_48_di" bpmnElement="Task_48">
+        <dc:Bounds x="1400" y="1180" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_49_di" bpmnElement="Task_49">
+        <dc:Bounds x="1600" y="1180" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_10_di" bpmnElement="SubProcess_10" isExpanded="true">
+        <dc:Bounds x="980" y="1140" width="820" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_50_di" bpmnElement="Task_50">
+        <dc:Bounds x="1880" y="1180" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_51_di" bpmnElement="Task_51">
+        <dc:Bounds x="2080" y="1180" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_52_di" bpmnElement="Task_52">
+        <dc:Bounds x="2280" y="1180" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_53_di" bpmnElement="Task_53">
+        <dc:Bounds x="2480" y="1180" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_54_di" bpmnElement="Task_54">
+        <dc:Bounds x="1880" y="1280" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_55_di" bpmnElement="Task_55">
+        <dc:Bounds x="2080" y="1280" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_56_di" bpmnElement="Task_56">
+        <dc:Bounds x="2280" y="1280" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_11_di" bpmnElement="SubProcess_11" isExpanded="true">
+        <dc:Bounds x="1860" y="1140" width="820" height="240" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="136" y="100" />
+        <di:waypoint x="186" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="326" y="100" />
+        <di:waypoint x="376" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="516" y="100" />
+        <di:waypoint x="566" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="706" y="100" />
+        <di:waypoint x="756" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="781" y="125" />
+        <di:waypoint x="781" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="1186" y="100" />
+        <di:waypoint x="1236" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="task_14hp2za3_di" bpmnElement="task_14hp2za3">
+        <dc:Bounds x="856" y="60" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="flow_e56j8811_di" bpmnElement="flow_e56j8811">
+        <di:waypoint x="806" y="100" />
+        <di:waypoint x="856" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_mxvnkgmi_di" bpmnElement="flow_mxvnkgmi">
+        <di:waypoint x="781" y="200" />
+        <di:waypoint x="781" y="170" />
+        <di:waypoint x="926" y="170" />
+        <di:waypoint x="926" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_s8qz3roz_di" bpmnElement="flow_s8qz3roz">
+        <di:waypoint x="996" y="100" />
+        <di:waypoint x="1046" y="100" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
