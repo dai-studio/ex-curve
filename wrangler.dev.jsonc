@@ -1,0 +1,20 @@
+// Curve — dev / staging. Same build as production, deployed as a separate Worker.
+//
+// Cloudflare Workers Builds (CI):
+//   Build command:  npm ci && npm run build
+//   Deploy command: npx wrangler deploy -c wrangler.dev.jsonc
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "curve-dev",
+  "compatibility_date": "2026-11-08",
+
+  "workers_dev": true,
+
+  // Custom domain for dev. Uncomment and set:
+  // "routes": [{ "pattern": "dev.curve.by.dai.studio", "custom_domain": true }],
+
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

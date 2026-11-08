@@ -10,7 +10,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "build:embed": "vite build -c vite.embed.config.ts && tsc -p tsconfig.embed.json && node -e \"require('fs').copyFileSync('dist-embed/types/embed.d.ts','dist-embed/curve-editor.d.ts')\"",
-    "preview:cf": "npm run build && wrangler dev"
+    "preview:cf": "npm run build && wrangler dev -c wrangler.prod.jsonc"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",

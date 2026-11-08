@@ -1,0 +1,24 @@
+// Curve — production.
+// A static site served by Workers static assets (no Worker script): `npm run build` writes dist/.
+//
+// Cloudflare Workers Builds (CI):
+//   Build command:  npm ci && npm run build
+//   Deploy command: npx wrangler deploy -c wrangler.prod.jsonc
+// Dev uses wrangler.dev.jsonc (deploy command: npx wrangler deploy -c wrangler.dev.jsonc).
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "curve",
+  "compatibility_date": "2026-11-08",
+
+  // The *.workers.dev URL. Set to false if only the custom domain should serve the app.
+  "workers_dev": true,
+
+  // Custom domain: the dai.studio zone must be on this Cloudflare account.
+  "routes": [{ "pattern": "curve.by.dai.studio", "custom_domain": true }],
+
+  "assets": {
+    "directory": "./dist",
+    // Single-page app: unknown paths serve index.html.
+    "not_found_handling": "single-page-application"
+  }
+}
