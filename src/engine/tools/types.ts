@@ -4,7 +4,9 @@
 // undoable insertion. Tools never touch History directly.
 import type { Modifiers, Vec } from '../model';
 
-export type ToolId = 'select' | 'rect' | 'ellipse' | 'line' | 'polygon' | 'star' | 'pen' | 'pencil' | 'text';
+export type ToolId = 'select' | 'hand' | 'rect' | 'ellipse' | 'line' | 'polygon' | 'star' | 'pen' | 'pencil' | 'text';
+/** Tools implemented as Tool objects; Select and Hand are handled by the editor itself. */
+export type CreationToolId = Exclude<ToolId, 'select' | 'hand'>;
 
 export interface ToolEvent {
   /** Screen (overlay) position. */

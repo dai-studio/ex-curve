@@ -13,6 +13,7 @@ export interface ToolDef { id: ToolId; label: string; key: string; icon: IconNam
 /** The tool rail, in display order. */
 export const TOOLS: ToolDef[] = [
   { id: 'select', label: 'Select', key: 'V', icon: 'select', hint: 'Select shapes and edit their points' },
+  { id: 'hand', label: 'Hand', key: 'H', icon: 'hand', hint: 'Drag to move the canvas · Space-drag pans from any tool' },
   { id: 'rect', label: 'Rectangle', key: 'R', icon: 'rect', hint: 'Drag to draw · Shift square · Alt from centre' },
   { id: 'ellipse', label: 'Ellipse', key: 'E', icon: 'circle', hint: 'Drag to draw · Shift circle · Alt from centre' },
   { id: 'line', label: 'Line', key: 'L', icon: 'line', hint: 'Drag to draw · Shift 15° steps · Alt from centre' },

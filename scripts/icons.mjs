@@ -11,7 +11,7 @@ const ICONS = {
   new: 'file-plus', open: 'folder-open', save: 'device-floppy', undo: 'arrow-back-up', redo: 'arrow-forward-up',
   delete: 'trash', 'zoom-in': 'zoom-in', 'zoom-out': 'zoom-out', fit: 'arrows-maximize', code: 'code', help: 'help',
   keyboard: 'keyboard', magnet: 'magnet', grid: 'grid-dots', 'to-path': 'vector-bezier', ellipse: 'oval',
-  select: 'pointer', direct: 'vector', rect: 'square', circle: 'circle', line: 'line', polygon: 'pentagon', star: 'star',
+  select: 'pointer', hand: 'hand-stop', direct: 'vector', rect: 'square', circle: 'circle', line: 'line', polygon: 'pentagon', star: 'star',
   pen: 'vector-bezier-2', pencil: 'pencil', text: 'typography', image: 'photo', layers: 'stack-2',
   eye: 'eye', 'eye-off': 'eye-off', lock: 'lock', unlock: 'lock-open', copy: 'copy', paste: 'clipboard', cut: 'scissors',
   download: 'download', upload: 'upload', chevron: 'chevron-down', more: 'dots', close: 'x', palette: 'palette',

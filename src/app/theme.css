@@ -187,7 +187,8 @@
 }
 .curve-stage:not([data-tool='select']) { cursor: crosshair; }
 .curve-stage[data-tool='text'] { cursor: text; }
-.curve-stage.panning { cursor: grab; }
+.curve-stage[data-tool='hand'], .curve-stage.panning { cursor: grab; }
+.curve-stage.grabbing { cursor: grabbing; }
 .curve-stage .canvas,
 .curve-stage .overlay { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .curve-stage .overlay { pointer-events: none; overflow: visible; }

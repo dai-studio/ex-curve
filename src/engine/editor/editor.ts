@@ -14,7 +14,7 @@ import {
 } from '../geom';
 import { Gesture } from './gesture';
 import { Emitter } from '../events';
-import { createTools, DEFAULT_TOOL_OPTIONS, type StyleKind, type Tool, type ToolEvent, type ToolHost, type ToolId, type ToolOptions } from '../tools';
+import { createTools, DEFAULT_TOOL_OPTIONS, type StyleKind, type CreationToolId, type Tool, type ToolEvent, type ToolHost, type ToolId, type ToolOptions } from '../tools';
 import { InlineTextEditor } from './textedit';
 import { stylePatch } from '../style';
 import { alignDeltas, distributeDeltas, planZOrder, ungroupBlocker, ungroupChildren, unionRect, type AlignEdge } from '../arrange';
@@ -153,7 +153,7 @@ export class Editor extends Emitter<EditorEvents> {
     text: { fill: '#0f172a' },
   };
   private toolId: ToolId = 'select';
-  private tools: Record<Exclude<ToolId, 'select'>, Tool>;
+  private tools: Record<CreationToolId, Tool>;
   private toolDown = false;
   private toolTargets: Vec[] | null = null;
   private previews = new Set<Element>();
@@ -572,7 +572,7 @@ export class Editor extends Emitter<EditorEvents> {
     const ordered = [...this.handles].sort((a, b) => PRIORITY[b.point.kind] - PRIORITY[a.point.kind]);
     for (const h of ordered) this.glyph(h, layers.handles);
     if (this.marquee) svg('rect', { class: 'marquee', x: this.marquee.x, y: this.marquee.y, width: this.marquee.width, height: this.marquee.height }, o);
-    if (this.toolId !== 'select') this.tools[this.toolId].overlay?.(svg('g', { class: 'tool-layer' }, o));
+    this.activeTool?.overlay?.(svg('g', { class: 'tool-layer' }, o));
     if (this.snapMark) {
       // Red × for object snaps, a smaller accent + for grid snaps.
       const { p: { x, y }, kind } = this.snapMark;
@@ -721,15 +721,19 @@ export class Editor extends Emitter<EditorEvents> {
     this.host.focus();
     const s = this.local(e);
     try { this.host.setPointerCapture(e.pointerId); } catch { /* synthetic pointer */ }
-    if (e.button === 1 || this.spaceDown) {
+    if (e.button === 1 || this.spaceDown || this.toolId === 'hand') {
+      e.preventDefault(); // middle button: no autoscroll
+      if (this.textEditor.editing) this.textEditor.commit();
       this.drag = { type: 'pan', startS: s, moved: false, v0: { x: this.view.x, y: this.view.y } };
+      this.host.classList.add('grabbing');
       return;
     }
-    if (this.toolId !== 'select') {
+    const tool = this.activeTool;
+    if (tool) {
       e.preventDefault(); // no compatibility mousedown: it would move focus away from inline text editing
       if (this.textEditor.editing) { this.textEditor.commit(); if (this.toolId === 'text') return; }
       this.toolDown = true;
-      this.tools[this.toolId].pointerDown(this.toolEvent(e, s));
+      tool.pointerDown(this.toolEvent(e, s));
       this.render();
       return;
     }
@@ -811,8 +815,10 @@ export class Editor extends Emitter<EditorEvents> {
       this.emit('pointer', D ? matApply(matInvert(D), s) : null);
     }
     const d = this.drag;
-    if (!d && this.toolId !== 'select') {
-      this.tools[this.toolId].pointerMove(this.toolEvent(e, s), this.toolDown);
+    if (!d && this.toolId === 'hand') return;
+    const tool = this.activeTool;
+    if (!d && tool) {
+      tool.pointerMove(this.toolEvent(e, s), this.toolDown);
       this.render();
       return;
     }
@@ -922,9 +928,10 @@ export class Editor extends Emitter<EditorEvents> {
     this.drag = null;
     this.snapMark = null;
     if (this.host.hasPointerCapture(e.pointerId)) this.host.releasePointerCapture(e.pointerId);
+    this.host.classList.remove('grabbing');
     if (this.toolDown) {
       this.toolDown = false;
-      if (this.toolId !== 'select') this.tools[this.toolId].pointerUp(this.toolEvent(e, this.local(e)));
+      this.activeTool?.pointerUp(this.toolEvent(e, this.local(e)));
       this.snapMark = null;
       this.render();
       this.emit('change');
@@ -994,6 +1001,7 @@ export class Editor extends Emitter<EditorEvents> {
   }
 
   private doubleClick(e: MouseEvent): void {
+    if (this.toolId === 'hand') return;
     const s = this.local(e);
     const h = this.hitHandle(s);
     if (h && h.point.kind !== 'bounding') {
@@ -1025,12 +1033,17 @@ export class Editor extends Emitter<EditorEvents> {
   get tool(): ToolId { return this.toolId; }
 
   /** True while a tool has unfinished work (e.g. a pen path being built). */
-  get toolBusy(): boolean { return this.toolId !== 'select' && !!this.tools[this.toolId].busy?.(); }
+  get toolBusy(): boolean { return !!this.activeTool?.busy?.(); }
+
+  /** The creation tool receiving pointer input; null for Select and Hand, which the editor handles. */
+  private get activeTool(): Tool | null {
+    return this.toolId === 'select' || this.toolId === 'hand' ? null : this.tools[this.toolId];
+  }
 
   setTool(id: ToolId): void {
     if (id === this.toolId) return;
     // Switching away from an unfinished construction keeps it (pen path), like Enter would.
-    if (this.toolId !== 'select') this.tools[this.toolId].commitPending?.();
+    this.activeTool?.commitPending?.();
     if (id === this.toolId) return;
     this.cancelTool();
     this.toolId = id;
@@ -1044,7 +1057,7 @@ export class Editor extends Emitter<EditorEvents> {
   /** Abandon in-progress tool work and inline text editing. */
   cancelTool(): void {
     this.textEditor?.commit();
-    if (this.toolId !== 'select') this.tools[this.toolId].cancel();
+    this.activeTool?.cancel();
     this.toolDown = false;
   }
 
@@ -1714,8 +1727,8 @@ export class Editor extends Emitter<EditorEvents> {
     if (e.code === 'Space') { this.spaceDown = true; this.host.classList.add('panning'); e.preventDefault(); return; }
     if (!this.doc) return;
     if (this.toolId !== 'select' && !cmd) {
-      const tool = this.tools[this.toolId];
-      if (tool.keyDown?.(e)) { e.preventDefault(); this.render(); this.emit('change'); return; }
+      const tool = this.activeTool;
+      if (tool?.keyDown?.(e)) { e.preventDefault(); this.render(); this.emit('change'); return; }
       if (e.key === 'Escape') { e.preventDefault(); this.setTool('select'); return; }
     }
     switch (e.key) {

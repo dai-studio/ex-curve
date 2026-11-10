@@ -15,7 +15,7 @@
 
   /** Sections in display order; commands not listed land in "More". */
   const SECTIONS: [string, string[]][] = [
-    ['Tools', ['tool-select', 'tool-rect', 'tool-ellipse', 'tool-line', 'tool-polygon', 'tool-star', 'tool-pen', 'tool-pencil', 'tool-text']],
+    ['Tools', ['tool-select', 'tool-hand', 'tool-rect', 'tool-ellipse', 'tool-line', 'tool-polygon', 'tool-star', 'tool-pen', 'tool-pencil', 'tool-text']],
     ['File', ['new', 'open', 'save', 'save-as', 'export']],
     ['Edit', ['undo', 'redo', 'cut', 'copy', 'paste', 'duplicate', 'delete', 'select-all']],
     ['Object', ['group', 'ungroup', 'front', 'forward', 'backward', 'back', 'flip-h', 'flip-v', 'edit-definition']],
@@ -32,7 +32,7 @@
     ['Shift while dragging', 'Keep proportions · 15° steps'],
     ['Alt while dragging', 'From the centre · break smooth node'],
     ['Ctrl while dragging', 'Bypass snapping'],
-    ['Space-drag · wheel', 'Pan'],
+    ['Space-drag · middle-drag · wheel', 'Pan'],
     ['⌘/Ctrl-wheel · pinch', 'Zoom'],
     ['Drag a number field', 'Scrub (Shift ×10, Alt ×0.1)'],
     ['Right-click', 'Node type, arc flags, convert, go to definition'],
