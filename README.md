@@ -91,3 +91,4 @@ The app is a static site served by Cloudflare Workers static assets (no Worker s
 ## License
 
 [BSD 2-Clause](LICENSE) © 2026 DAI Studio
+
